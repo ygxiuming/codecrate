@@ -1,0 +1,36 @@
+# 更新日志
+
+本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
+
+## [1.0.0] - 2026-10-22
+
+### 新增
+
+- VS Code 安装包离线缓存：版本列表、批量多版本/多平台（默认 10 个主流平台）、平台可用性探测、任务化下载。
+- 按 commit 反查版本：支持 7–40 位十六进制 commit，优先命中本地索引，未命中时探测最近 150 个稳定版。
+- 插件离线管理：`.vsix` 上传、元数据解析（ID/版本/Publisher/引擎/依赖/插件包/分类/关键词/许可证/图标）、重复检测、多版本管理。
+- 插件市场：官方 Marketplace 与 Open VSX 双适配器，关键词/分类/下载量/更新时间检索，目标平台选择，一键缓存。
+- Remote-SSH Server：按 VS Code 版本解析 commit，缓存 Linux x64/ARM64/ARMHF、macOS ARM64、Windows x64；支持配置镜像源自动下载，也支持手动上传离线 server 包（自动读取 `product.json` 识别版本与 commit）。
+- Remote-SSH 版本列表的 commit 支持回退到已缓存 VS Code 安装包，并可对未缓存版本按需解析或批量解析。
+- 任务中心：排队/运行/成功/失败/取消，进度、自动退避重试、手动重试/取消、事件时间线。
+- 下载：HTTP Range 断点续传、ETag、单 IP 并发限制、下载计数与访问事件。
+- 存储管理：分类占用、磁盘余量、SHA256 校验、删除、临时文件清理。
+- 访问分析：PV/UV/点击/搜索/下载趋势、热门页面/资源/搜索词、事件明细、CSV 导出、按天保留期清理。
+- 匿名访客标识（签名 HttpOnly Cookie）与完整 IP 记录（默认保留 90 天）。
+- 公告：创建、编辑、发布/下线、删除、置顶、定时生效/过期，前台以弹窗展示并记忆关闭状态。
+- 市场浏览缓存弹窗返回插件全部历史版本（修复官方 gallery `IncludeLatestVersionOnly` 只返回最新版的问题）。
+- 存储管理新增「扫描缓存目录」：手动复制文件到 `data/files` 或直接删除文件后，一键同步索引（新增/更新/移除）。
+- Remote-SSH 原生接入：新增 `/api/vscode-update/commit:<commit>/server-<platform>/stable` 兼容路径，支持 `remote.SSH.useOSS` + `ossDownloadUrl` 由远端自动下载，或 `manual-bootstrap` 客户端下载后 SCP 推送。
+- VS Code gallery 兼容网关：供客户端 `extensionsGallery` 搜索与安装已缓存插件。
+- 管理后台：管理员登录（scrypt + DB 会话）、会话隔离、登录限流、CSRF 同源校验、审计日志、密码修改、密码重置 CLI。
+- 可选前台访问码；反向代理兼容（TRUST_PROXY / COOKIE_SECURE）。
+- 安全：SSRF 防护（协议/凭据/端口/DNS/逐跳重定向/连接期 IP 绑定）、zip 炸弹与 zip-slip 防护、路径包含校验、CSP。
+- 数据源在线配置与连通性测试；多项并发/上传/日志保留设置。
+- 内置中文使用文档与 SVG 流程图；MIT 许可；GitHub Actions CI 与 Docker 镜像自动发布。
+- Docker 交付：多阶段构建镜像，`docker compose` 一键启动；宿主机 `data/` 映射到 `/data`，入口脚本自动修正目录属主后降权运行。
+- GitHub Actions 自动构建并推送 GHCR（`linux/amd64` + `linux/arm64`，含 provenance 与 SBOM），支持 `main`、版本 tag 与手动触发。
+
+### 说明
+
+- 仅支持 VS Code stable 渠道。
+- VS Code gallery 接入需修改客户端 `product.json`，可能影响官方签名与自动更新。

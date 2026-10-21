@@ -1,0 +1,44 @@
+{
+  "name": "@codecrate/server",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "reset-admin": "node dist/cli/reset-admin.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.4.1",
+    "fast-xml-parser": "^4.5.0",
+    "helmet": "^8.0.0",
+    "multer": "^2.0.2",
+    "pino": "^9.5.0",
+    "pino-http": "^10.3.0",
+    "undici": "^7.1.0",
+    "yauzl": "^3.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^5.0.0",
+    "@types/multer": "^1.4.12",
+    "@types/node": "^22.10.0",
+    "@types/supertest": "^6.0.2",
+    "@types/yauzl": "^2.10.3",
+    "supertest": "^7.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "yazl": "^3.3.1",
+    "@types/yazl": "^3.3.0"
+  }
+}

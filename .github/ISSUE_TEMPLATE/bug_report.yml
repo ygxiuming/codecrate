@@ -1,0 +1,72 @@
+name: Bug report
+description: 报告可复现的问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请勿在公开 Issue 中粘贴密码、Cookie、内部地址或完整访问日志。
+        安全问题请通过 Security Advisories 私下报告。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 发生了什么？期望的行为是什么？
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 ...
+        2. 点击 ...
+        3. 看到 ...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      placeholder: "例如 1.0.0 / commit sha"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: 部署方式
+      options:
+        - 本地开发（npm run dev）
+        - 生产构建（npm start）
+        - Docker（计划中/自建）
+        - 其他
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: 环境
+      placeholder: "操作系统、Node.js 版本、浏览器、反向代理"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / 截图
+      description: 请先移除敏感信息。
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 确认
+      options:
+        - label: 已搜索现有 Issue，未找到重复
+          required: true
+        - label: 已移除日志中的密码、Cookie、IP 等敏感信息
+          required: true

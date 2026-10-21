@@ -1,0 +1,57 @@
+name: codecrate
+
+services:
+  registry:
+    image: ${IMAGE_NAME:-codecrate:1.0.0}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${IMAGE_TAG:-1.0.0}
+    container_name: ${CONTAINER_NAME:-codecrate}
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATA_DIR: /data
+      STORAGE_DIR: /data/files
+      DB_PATH: /data/registry.db
+      WEB_DIST: /app/web/dist
+      SITE_NAME: ${SITE_NAME:-CodeCrate 离线部署源}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
+      COOKIE_SECURE: ${COOKIE_SECURE:-auto}
+      NETWORK_ALLOWED_PRIVATE_HOSTS: ${NETWORK_ALLOWED_PRIVATE_HOSTS:-}
+      CACHE_CONCURRENCY: ${CACHE_CONCURRENCY:-3}
+      ACCESS_LOG_RETENTION_DAYS: ${ACCESS_LOG_RETENTION_DAYS:-90}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TZ: ${TZ:-Asia/Shanghai}
+    volumes:
+      # 数据目录映射到宿主机：数据库、安装包、插件、Remote-SSH server 全部落在
+      # 这里，容器重建或升级不会丢失。可通过 DATA_DIR_HOST 改到其他路径。
+      - "${DATA_DIR_HOST:-./data}:/data"
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 25s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

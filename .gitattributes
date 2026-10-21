@@ -1,0 +1,13 @@
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.vsix binary
+*.gz binary
+*.zip binary
+*.sqlite binary
+*.db binary

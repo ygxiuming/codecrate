@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 380" role="img" aria-label="离线部署流程">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="1" stop-color="#eef5fd"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#7fa6c9"/>
+    </marker>
+  </defs>
+  <rect width="960" height="380" rx="18" fill="url(#bg)"/>
+  <text x="40" y="46" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="22" font-weight="700" fill="#10233a">资源从外网进入内网的完整链路</text>
+  <text x="40" y="72" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" fill="#6b7f94">管理员采集一次，普通用户即可在内网反复下载，无需重复出网。</text>
+
+  <rect x="40" y="104" width="250" height="216" rx="14" fill="#ffffff" stroke="#e2eaf4"/>
+  <rect x="40" y="104" width="250" height="44" rx="14" fill="#0d2c49"/>
+  <rect x="40" y="134" width="250" height="14" fill="#0d2c49"/>
+  <text x="62" y="133" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#ffffff">① 管理员 · 联网环境</text>
+  <text x="64" y="178" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" fill="#425466">选择 VS Code 版本与平台</text>
+  <text x="64" y="204" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" fill="#425466">上传或市场缓存 .vsix 插件</text>
+  <text x="64" y="230" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" fill="#425466">按版本缓存 Remote-SSH Server</text>
+  <rect x="64" y="252" width="202" height="44" rx="9" fill="#eaf3fd"/>
+  <text x="78" y="279" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="12" fill="#005a9e">解析元数据 · 下载 · SHA256</text>
+
+  <line x1="298" y1="212" x2="352" y2="212" stroke="#7fa6c9" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="360" y="104" width="250" height="216" rx="14" fill="#ffffff" stroke="#e2eaf4"/>
+  <rect x="360" y="104" width="250" height="44" rx="14" fill="#0078d4"/>
+  <rect x="360" y="134" width="250" height="14" fill="#0078d4"/>
+  <text x="382" y="133" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#ffffff">② 离线源 · 内网服务器</text>
+  <rect x="382" y="168" width="206" height="54" rx="10" fill="#f3f8fe" stroke="#d6e8f8"/>
+  <text x="396" y="190" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="12.5" font-weight="600" fill="#10233a">SQLite 元数据 + 本地文件卷</text>
+  <text x="396" y="210" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="11.5" fill="#6b7f94">版本 / 平台 / 大小 / 校验值 / 下载量</text>
+  <text x="382" y="250" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="12.5" fill="#425466">• 断点续传 + 完整性校验</text>
+  <text x="382" y="274" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="12.5" fill="#425466">• 任务进度、失败重试、审计日志</text>
+  <text x="382" y="298" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="12.5" fill="#425466">• 访问日志与点击事件分析</text>
+
+  <line x1="618" y1="212" x2="672" y2="212" stroke="#7fa6c9" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="680" y="104" width="240" height="216" rx="14" fill="#ffffff" stroke="#e2eaf4"/>
+  <rect x="680" y="104" width="240" height="44" rx="14" fill="#0f7b5f"/>
+  <rect x="680" y="134" width="240" height="14" fill="#0f7b5f"/>
+  <text x="702" y="133" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#ffffff">③ 普通用户 · 纯内网</text>
+  <text x="702" y="178" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" fill="#425466">浏览已缓存版本与插件</text>
+  <text x="702" y="204" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" fill="#425466">网页直接下载，支持 Range 续传</text>
+  <text x="702" y="230" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" fill="#425466">复制 SHA256 并本地核验</text>
+  <rect x="702" y="252" width="196" height="44" rx="9" fill="#e9f7f1"/>
+  <text x="716" y="279" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="12" fill="#0f7b5f">无需出网 · 无需登录（可配置）</text>
+
+  <text x="40" y="352" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="12" fill="#8497a9">提示：管理员采集动作需要访问官方源；系统核心运行、浏览与下载均不依赖外网。</text>
+</svg>

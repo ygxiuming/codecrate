@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全漏洞
+    url: https://github.com/ygxiuming/codecrate/security/advisories/new
+    about: 请勿公开披露可利用细节，使用私有安全公告。

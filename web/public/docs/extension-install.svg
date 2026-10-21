@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" role="img" aria-label="插件离线安装流程">
+  <defs>
+    <marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#7fa6c9"/>
+    </marker>
+  </defs>
+  <rect width="960" height="320" rx="18" fill="#f8fbff"/>
+  <text x="40" y="44" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="21" font-weight="700" fill="#10233a">离线安装 .vsix 插件</text>
+  <text x="40" y="69" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" fill="#6b7f94">下载文件后，按使用场景选择一种安装方式即可。</text>
+
+  <rect x="40" y="100" width="200" height="150" rx="14" fill="#fff" stroke="#e2eaf4"/>
+  <circle cx="70" cy="132" r="16" fill="#eaf3fd"/>
+  <text x="70" y="137" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="700" fill="#0078d4">1</text>
+  <text x="96" y="137" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#10233a">下载 .vsix</text>
+  <text x="60" y="172" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="12" fill="#6b7f94">从内网插件页选择版本</text>
+  <text x="60" y="194" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="12" fill="#6b7f94">可同时核验 SHA256</text>
+  <rect x="60" y="212" width="160" height="24" rx="6" fill="#f3f6fa"/>
+  <text x="70" y="228" font-family="Consolas, monospace" font-size="10.5" fill="#526b82">python-2025.10.0.vsix</text>
+
+  <line x1="248" y1="175" x2="300" y2="175" stroke="#7fa6c9" stroke-width="2" marker-end="url(#arrow2)"/>
+
+  <rect x="308" y="100" width="330" height="150" rx="14" fill="#fff" stroke="#e2eaf4"/>
+  <circle cx="338" cy="132" r="16" fill="#eaf3fd"/>
+  <text x="338" y="137" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="700" fill="#0078d4">2</text>
+  <text x="364" y="137" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#10233a">选择安装方式</text>
+  <rect x="328" y="156" width="140" height="72" rx="8" fill="#f3f8fe" stroke="#dbeafb"/>
+  <text x="340" y="178" font-family="Consolas, monospace" font-size="10.5" fill="#005a9e">code --install-extension</text>
+  <text x="340" y="198" font-family="Consolas, monospace" font-size="10.5" fill="#005a9e">  xxx.vsix</text>
+  <text x="340" y="218" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="10.5" fill="#6b7f94">命令行 / 自动化脚本</text>
+  <rect x="480" y="156" width="138" height="72" rx="8" fill="#f3f8fe" stroke="#dbeafb"/>
+  <text x="492" y="178" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="11.5" fill="#005a9e">扩展面板</text>
+  <text x="492" y="198" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="11.5" fill="#005a9e">··· → 从 VSIX 安装</text>
+  <text x="492" y="218" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="10.5" fill="#6b7f94">桌面端图形操作</text>
+
+  <line x1="646" y1="175" x2="698" y2="175" stroke="#7fa6c9" stroke-width="2" marker-end="url(#arrow2)"/>
+
+  <rect x="706" y="100" width="214" height="150" rx="14" fill="#fff" stroke="#e2eaf4"/>
+  <circle cx="736" cy="132" r="16" fill="#e9f7f1"/>
+  <text x="736" y="137" text-anchor="middle" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="13" font-weight="700" fill="#0f7b5f">3</text>
+  <text x="762" y="137" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="14" font-weight="600" fill="#10233a">验证安装</text>
+  <text x="726" y="170" font-family="Consolas, monospace" font-size="10.5" fill="#005a9e">code --list-extensions</text>
+  <text x="726" y="188" font-family="Consolas, monospace" font-size="10.5" fill="#005a9e">  --show-versions</text>
+  <text x="726" y="216" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="11.5" fill="#6b7f94">确认版本与引擎范围匹配</text>
+  <text x="726" y="236" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="11.5" fill="#6b7f94">远程开发需在远端安装</text>
+
+  <rect x="40" y="272" width="880" height="30" rx="8" fill="#eef5fd"/>
+  <text x="56" y="292" font-family="PingFang SC, Microsoft YaHei, sans-serif" font-size="11.5" fill="#3f5b77">注意：Remote-SSH 场景下，插件通常安装在远端主机。请先连接远端，再在远程窗口执行安装，或使用远端 CLI。</text>
+</svg>
