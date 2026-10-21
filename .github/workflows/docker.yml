@@ -70,7 +70,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           # 同一份镜像同时支持 x86 与 ARM 服务器；PR 只构建 amd64 以节省时间。
