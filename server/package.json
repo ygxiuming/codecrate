@@ -17,7 +17,7 @@
     "cookie-parser": "^1.4.7",
     "express": "^5.1.0",
     "express-rate-limit": "^7.4.1",
-    "fast-xml-parser": "^4.5.0",
+    "fast-xml-parser": "^5.11.2",
     "helmet": "^8.0.0",
     "multer": "^2.0.2",
     "pino": "^9.5.0",
