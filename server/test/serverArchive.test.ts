@@ -50,6 +50,36 @@ describe('server archive inspection', () => {
     expect(info?.commit).toBe(COMMIT);
   });
 
+  it('skips nested product.json files without version or commit', async () => {
+    const tarPath = path.join(tmpDir, 'nested.tar.gz');
+    fs.writeFileSync(
+      tarPath,
+      createServerTarGz({
+        version: '1.97.0',
+        commit: COMMIT,
+        platform: 'linux-x64',
+        withNestedProduct: true,
+      }),
+    );
+    const tarInfo = await inspectServerArchive(tarPath);
+    expect(tarInfo?.version).toBe('1.97.0');
+    expect(tarInfo?.commit).toBe(COMMIT);
+
+    const zipPath = path.join(tmpDir, 'nested.zip');
+    fs.writeFileSync(
+      zipPath,
+      await createServerZip({
+        version: '1.97.1',
+        commit: COMMIT,
+        platform: 'win32-x64',
+        withNestedProduct: true,
+      }),
+    );
+    const zipInfo = await inspectServerArchive(zipPath);
+    expect(zipInfo?.version).toBe('1.97.1');
+    expect(zipInfo?.commit).toBe(COMMIT);
+  });
+
   it('returns null when the archive has no product.json', async () => {
     const file = path.join(tmpDir, 'empty.tar.gz');
     const empty = Buffer.alloc(1024);

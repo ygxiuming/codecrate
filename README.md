@@ -14,8 +14,11 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%E2%89%A522-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![GHCR](https://img.shields.io/badge/ghcr.io-ygxiuming%2Fcodecrate-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/ygxiuming/codecrate/pkgs/container/codecrate)
+[![GitHub stars](https://img.shields.io/github/stars/ygxiuming/codecrate?style=social)](https://github.com/ygxiuming/codecrate)
 
 [English](README.en.md) ｜ [更新日志](CHANGELOG.md) ｜ [文档](docs/ARCHITECTURE.md) ｜ [问题反馈](https://github.com/ygxiuming/codecrate/issues) ｜ [发布版本](https://github.com/ygxiuming/codecrate/releases)
+
+**如果 CodeCrate 帮你解决了隔离内网的离线部署问题，欢迎点一个 ⭐ Star 支持项目。**
 
 <img src="docs/screenshots/home.png" alt="CodeCrate 首页" width="100%">
 
@@ -38,6 +41,7 @@
 - [备份、恢复与密码重置](#备份恢复与密码重置)
 - [已知限制](#已知限制)
 - [数据源与合规](#数据源与合规)
+- [支持项目](#支持项目)
 - [贡献](#贡献)
 - [许可证](#许可证)
 
@@ -64,6 +68,7 @@ CodeCrate 把这三类资源统一缓存到内网，提供可搜索的前台、�
 - 网页直链下载，支持 HTTP Range 断点续传。
 - 内置使用说明：安装、校验、离线装插件、Remote-SSH 配置、VS Code 接入、FAQ。
 - 公告弹窗：管理员发布的维护通知/版本提醒以弹窗展示，支持级别、置顶、定时生效与关闭记忆。
+- 页头/页脚提供 GitHub 仓库、问题反馈与 Star 入口；首页包含开源项目说明与 Star 引导。
 - 右上角「管理登录」入口直达后台。
 - 可选「前台访问码」，开启后浏览与下载需输入共用访问码。
 
@@ -458,6 +463,15 @@ docker compose exec -u node -e ADMIN_PASSWORD='new-strong-password' registry \
 - 管理员操作不进入访客埋点，只写入审计日志。
 - 部署者应根据组织制度告知使用者，并设置合理保留期。
 
+## 支持项目
+
+CodeCrate 以 MIT 许可开源，持续维护离不开使用者的反馈与传播：
+
+- ⭐ 在 [GitHub 仓库](https://github.com/ygxiuming/codecrate) 点一个 Star，让更多需要内网离线分发的团队找到它；
+- 转发给正在被 VS Code 离线安装、插件市场不可达或 Remote-SSH 下载卡住困扰的同事；
+- 通过 [Issues](https://github.com/ygxiuming/codecrate/issues) 报告问题、提出建议，或直接提交 Pull Request；
+- 部署后把本项目的 GitHub 入口保留在前台页头/页脚，帮助下一位使用者找到上游。
+
 ## 贡献
 
 欢迎提交 Issue 与 Pull Request：
@@ -467,8 +481,6 @@ docker compose exec -u node -e ADMIN_PASSWORD='new-strong-password' registry \
 - 功能建议请使用 [Feature 模板](https://github.com/ygxiuming/codecrate/issues/new?template=feature_request.yml)。
 - 代码贡献请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)，并确保 `npm run typecheck && npm run lint && npm test && npm run build` 全部通过。
 - 参与本项目即表示同意遵守 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)。
-
-如果 CodeCrate 对你有帮助，欢迎点一个 ⭐ Star，这是对项目最直接的支持。
 
 ## 许可证
 

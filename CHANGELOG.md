@@ -2,6 +2,23 @@
 
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 与 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [Unreleased]
+
+### 新增
+
+- 前台页头/页脚新增 GitHub 仓库、问题反馈与 Star 入口；首页新增开源说明与 Star 引导卡片。
+- 插件详情抽屉补充依赖与 Extension Pack 展示，公开列表接口同步返回这两个字段。
+- README 中英文新增 GitHub Stars 徽章与「支持项目」章节。
+
+### 修复
+
+- 后台「系统设置 → 测试官方源」发送的 `marketplace` 别名未被适配器识别，导致测试始终失败；现兼容 `official` 与旧别名。
+- Remote-SSH server 手动上传的 commit 现严格校验 40 位十六进制，与自动解析和更新接口保持一致。
+- 解析 server 包时跳过缺少版本/commit 的嵌套 `product.json`，避免误用依赖目录中的同名文件。
+- 市场缓存插件时校验 vsix 内的版本号与市场记录一致，避免文件路径与索引版本错位。
+- 删除插件时不再误删仍被其他插件引用的共享图标（图标按内容哈希复用）。
+- 修复移动端窄屏下页头与快捷开始区域导致的横向溢出。
+
 ## [1.0.0] - 2026-10-22
 
 ### 新增

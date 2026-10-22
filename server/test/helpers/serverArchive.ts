@@ -7,6 +7,8 @@ export interface ServerArchiveOptions {
   platform: string;
   quality?: string;
   date?: string;
+  /** 在真实 product.json 之前插入一个不完整的嵌套 product.json，用于测试扫描逻辑。 */
+  withNestedProduct?: boolean;
 }
 
 function tarHeader(name: string, size: number): Buffer {
@@ -50,13 +52,28 @@ export function createServerTarGz(options: ServerArchiveOptions): Buffer {
   const name = `vscode-server-${options.platform}/product.json`;
   const header = tarHeader(name, product.length);
   const padding = Buffer.alloc((512 - (product.length % 512)) % 512);
-  const end = Buffer.alloc(1024);
-  return gzipSync(Buffer.concat([header, product, padding, end]));
+  const parts: Buffer[] = [];
+  if (options.withNestedProduct) {
+    const nested = Buffer.from(JSON.stringify({ name: 'nested-module' }), 'utf8');
+    parts.push(
+      tarHeader(`vscode-server-${options.platform}/node_modules/nested/product.json`, nested.length),
+      nested,
+      Buffer.alloc((512 - (nested.length % 512)) % 512),
+    );
+  }
+  parts.push(header, product, padding, Buffer.alloc(1024));
+  return gzipSync(Buffer.concat(parts));
 }
 
 export async function createServerZip(options: ServerArchiveOptions): Promise<Buffer> {
   const product = productJson(options);
   const zip = new yazl.ZipFile();
+  if (options.withNestedProduct) {
+    zip.addBuffer(
+      Buffer.from(JSON.stringify({ name: 'nested-module' }), 'utf8'),
+      `vscode-server-${options.platform}/node_modules/nested/product.json`,
+    );
+  }
   zip.addBuffer(product, `vscode-server-${options.platform}/product.json`);
   zip.end();
   return new Promise<Buffer>((resolve, reject) => {

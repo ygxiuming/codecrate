@@ -236,14 +236,85 @@ a:hover {
 
 .hero-sub {
   max-width: 660px;
-  margin: 0 0 26px;
+  margin: 0 0 16px;
   color: rgba(224, 238, 252, 0.75);
   font-size: 15.5px;
   line-height: 1.8;
 }
 
+.hero-repo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 24px;
+  color: rgba(214, 233, 251, 0.62);
+  font-size: 12.5px;
+}
+
+.hero-repo a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #9fd4ff;
+  font-weight: 600;
+}
+
+.hero-repo a:hover {
+  color: #d3ecff;
+}
+
 .hero-search {
   max-width: 560px;
+}
+
+/* ---------- Open-source / star callout ---------- */
+.star-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+  background: linear-gradient(120deg, #f8fbff 0%, #eef7ff 52%, #e7f2ff 100%);
+  border: 1px solid #d8e8f8;
+}
+
+.star-card-icon {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  margin-top: 4px;
+  border-radius: 20px;
+  background: #0d1117;
+  color: #fff;
+  font-size: 32px;
+  box-shadow: 0 12px 28px rgba(13, 17, 23, 0.22);
+}
+
+.star-card-body h2 {
+  margin: 10px 0 8px;
+  font-size: 21px;
+  letter-spacing: -0.015em;
+}
+
+.star-card-body p {
+  max-width: 760px;
+  margin: 0 0 16px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.85;
+}
+
+.star-card-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.star-card-link {
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .hero-search .ant-input-affix-wrapper {
@@ -1171,10 +1242,33 @@ a:hover {
   flex-wrap: wrap;
 }
 
+.public-footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .public-footer-links {
   display: flex;
+  align-items: center;
   gap: 18px;
   flex-wrap: wrap;
+}
+
+.public-footer-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.public-footer-links .footer-star {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.public-footer-links .footer-star:hover {
+  color: #b45309;
 }
 
 /* ---------- Responsive ---------- */
@@ -1211,13 +1305,23 @@ a:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .public-header-inner {
-    gap: 14px;
+    gap: 10px;
   }
   .brand small {
     display: none;
   }
   .header-meta {
     display: none;
+  }
+  .public-nav .nav-link > span:not(.anticon),
+  .header-actions .ant-tag {
+    display: none;
+  }
+  .public-nav .nav-link {
+    padding: 8px 10px;
+  }
+  .header-actions {
+    gap: 6px;
   }
   .admin-content {
     padding: 18px 14px;
@@ -1265,6 +1369,10 @@ a:hover {
   gap: 28px;
 }
 
+.quickstart-grid > * {
+  min-width: 0;
+}
+
 .platform-check-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1288,6 +1396,10 @@ a:hover {
   .quickstart-grid {
     grid-template-columns: 1fr;
   }
+  .star-card {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1300,6 +1412,17 @@ a:hover {
 .admin-entry {
   font-size: 13px;
   border: 1px solid var(--line);
+}
+
+.github-entry {
+  font-size: 13px;
+  border: 1px solid var(--line);
+}
+
+.github-entry:hover {
+  background: #0d1117;
+  border-color: #0d1117;
+  color: #fff;
 }
 
 .announcement-stack {
@@ -1320,7 +1443,12 @@ a:hover {
 }
 
 @media (max-width: 640px) {
-  .admin-entry span {
+  .admin-entry > span:not(.anticon),
+  .github-entry > span:not(.anticon),
+  .brand > span:last-child {
     display: none;
+  }
+  .public-footer-inner {
+    align-items: flex-start;
   }
 }

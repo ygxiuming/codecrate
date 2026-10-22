@@ -194,10 +194,16 @@ export async function deleteArtifact(type: ArtifactType, id: number): Promise<Ar
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
   }
   if (type === 'extension' && record.icon_path) {
-    try {
-      await fs.promises.unlink(resolveWithin(record.icon_path));
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    // 图标按内容哈希共享，仍有其他插件引用时不能删除。
+    const shared = getDb()
+      .prepare('SELECT 1 AS hit FROM extensions WHERE icon_path = ? AND id != ? LIMIT 1')
+      .get(record.icon_path, id);
+    if (!shared) {
+      try {
+        await fs.promises.unlink(resolveWithin(record.icon_path));
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      }
     }
   }
 

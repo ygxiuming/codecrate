@@ -125,7 +125,7 @@ export function SettingsPage() {
     }
   };
 
-  const testSource = async (type: 'vscode' | 'marketplace' | 'openvsx' | 'remote'): Promise<void> => {
+  const testSource = async (type: 'vscode' | 'official' | 'openvsx' | 'remote'): Promise<void> => {
     setTesting(type);
     try {
       const result = await api.post<TestResult>('/api/admin/settings/test-source', { type });
@@ -328,13 +328,13 @@ export function SettingsPage() {
                           <Button
                             size="small"
                             icon={<ApiOutlined />}
-                            loading={testing === 'marketplace'}
-                            onClick={() => void testSource('marketplace')}
+                            loading={testing === 'official'}
+                            onClick={() => void testSource('official')}
                           >
                             测试官方源
                           </Button>
                         </Space>
-                        {resultAlert('marketplace', '官方 Marketplace')}
+                        {resultAlert('official', '官方 Marketplace')}
                       </Col>
                       <Col xs={24} md={12}>
                         <Form.Item

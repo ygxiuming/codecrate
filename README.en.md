@@ -14,8 +14,11 @@ Cache once on a connected admin network. Let isolated users browse, verify and d
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%E2%89%A522-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![GHCR](https://img.shields.io/badge/ghcr.io-ygxiuming%2Fcodecrate-2496ED?style=flat-square&logo=docker&logoColor=white)](https://github.com/ygxiuming/codecrate/pkgs/container/codecrate)
+[![GitHub stars](https://img.shields.io/github/stars/ygxiuming/codecrate?style=social)](https://github.com/ygxiuming/codecrate)
 
 [简体中文](README.md) ｜ [Changelog](CHANGELOG.md) ｜ [Architecture](docs/ARCHITECTURE.md) ｜ [Issues](https://github.com/ygxiuming/codecrate/issues) ｜ [Releases](https://github.com/ygxiuming/codecrate/releases)
+
+**If CodeCrate saves you from one more offline-deployment headache, please give it a ⭐ Star.**
 
 <img src="docs/screenshots/home.png" alt="CodeCrate home page" width="100%">
 
@@ -34,6 +37,7 @@ Cache once on a connected admin network. Let isolated users browse, verify and d
 - [Development](#development)
 - [Offline distribution](#offline-distribution)
 - [Compliance](#compliance)
+- [Support the project](#support-the-project)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -57,6 +61,7 @@ CodeCrate caches all three resource types inside your network behind a searchabl
 - **Task queue** — persistent SQLite-backed jobs with progress, retries with backoff, cancellation, resumable `.part` downloads and per-task event logs.
 - **Integrity** — streaming SHA256, hash verification, range downloads and full storage accounting; one-click cache-folder scan imports files copied in manually and removes records whose files were deleted.
 - **Anonymous access + optional access code** — intranet users can browse/download without accounts; an admin can require a shared access code.
+- **Open-source entry points** — GitHub, issue and Star links in the public header/footer, plus a project description and Star callout on the home page.
 - **Analytics** — page views, unique visitors, clicks, searches and real downloads with full IP logging (90-day retention by default), CSV export and configurable retention.
 - **Announcements** — publish, pin, schedule and expire notices shown in a public modal with remembered dismissal.
 - **VS Code gallery gateway** — an `extensionsGallery`-compatible read-only API so a configured VS Code client can search and install cached extensions directly.
@@ -241,11 +246,18 @@ docker compose up -d
 
 This project is not affiliated with Microsoft. The Visual Studio Marketplace gallery API is primarily intended for VS Code clients; using it from third-party clients may be subject to service terms. Switch to Open VSX or upload `.vsix` files manually where compliance matters. No Microsoft binaries or extensions are included in this repository.
 
+## Support the project
+
+CodeCrate is MIT-licensed and maintained in the open:
+
+- ⭐ Star the [GitHub repository](https://github.com/ygxiuming/codecrate) so more teams can find it;
+- Share it with colleagues stuck on offline VS Code installs, an unreachable marketplace or Remote-SSH server downloads;
+- Report problems and ideas in [Issues](https://github.com/ygxiuming/codecrate/issues), or send a pull request;
+- Keep the GitHub entry in the public header/footer after deploying so the next user can find upstream.
+
 ## Contributing
 
 Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) first, and make sure `npm run typecheck && npm run lint && npm test && npm run build` passes.
-
-If CodeCrate saves you time, a ⭐ Star is the simplest way to support the project.
 
 ## License
 

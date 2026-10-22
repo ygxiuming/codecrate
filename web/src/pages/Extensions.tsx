@@ -236,6 +236,24 @@ export function ExtensionsPage() {
               <Descriptions.Item label="平台" span={2}>
                 {selected.platforms.map(platformLabel).join(' / ')}
               </Descriptions.Item>
+              <Descriptions.Item label="依赖" span={2}>
+                {selected.dependencies.length > 0 ? (
+                  <span className="mono" style={{ fontSize: 12.5, lineHeight: 1.9 }}>
+                    {selected.dependencies.join(', ')}
+                  </span>
+                ) : (
+                  <span className="muted">无</span>
+                )}
+              </Descriptions.Item>
+              <Descriptions.Item label="Extension Pack" span={2}>
+                {selected.extensionPack.length > 0 ? (
+                  <span className="mono" style={{ fontSize: 12.5, lineHeight: 1.9 }}>
+                    {selected.extensionPack.join(', ')}
+                  </span>
+                ) : (
+                  <span className="muted">无</span>
+                )}
+              </Descriptions.Item>
             </Descriptions>
 
             <div>

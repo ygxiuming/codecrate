@@ -5,15 +5,18 @@ import {
   BookOutlined,
   CloudServerOutlined,
   CodeOutlined,
+  GithubOutlined,
   HomeOutlined,
   LockOutlined,
   LoginOutlined,
   NotificationOutlined,
   SafetyCertificateOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { api } from '../api/client';
 import type { Announcement, PublicConfig } from '../api/types';
+import { PROJECT } from '../lib/project';
 import { trackClick, trackPageView } from '../lib/tracker';
 
 const NAV_ITEMS = [
@@ -184,6 +187,16 @@ export function PublicLayout() {
             ))}
           </nav>
           <div className="header-actions">
+            <a
+              href={PROJECT.repoUrl}
+              className="nav-link github-entry"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="查看 CodeCrate 源码与更新"
+            >
+              <GithubOutlined />
+              <span>GitHub</span>
+            </a>
             <Link to="/admin/login" className="nav-link admin-entry">
               <LoginOutlined />
               <span>管理登录</span>
@@ -250,16 +263,31 @@ export function PublicLayout() {
 
       <footer className="public-footer">
         <div className="container public-footer-inner">
-          <div>
+          <div className="public-footer-meta">
             <strong style={{ color: '#425466' }}>{siteName}</strong>
-            <span style={{ marginLeft: 10 }}>
-              离线资源仅限内网使用，请勿将下载文件外传
+            <span>
+              离线资源仅限内网使用，请勿将下载文件外传 · 基于开源项目{' '}
+              <a href={PROJECT.repoUrl} target="_blank" rel="noopener noreferrer">
+                CodeCrate
+              </a>{' '}
+              ({PROJECT.license})
             </span>
           </div>
           <div className="public-footer-links">
             <Link to="/docs">使用说明</Link>
             <Link to="/docs?tab=remote-ssh">Remote-SSH 配置</Link>
             <Link to="/docs?tab=faq">常见问题</Link>
+            <a href={PROJECT.issuesUrl} target="_blank" rel="noopener noreferrer">
+              问题反馈
+            </a>
+            <a
+              href={PROJECT.repoUrl}
+              className="footer-star"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <StarOutlined /> Star
+            </a>
             <span>v{config?.version ?? '1.0.0'}</span>
           </div>
         </div>

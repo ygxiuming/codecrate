@@ -64,8 +64,8 @@ adminRemoteRouter.post(
       if (body.platform && !/^[a-z0-9][a-z0-9-]{0,39}$/.test(body.platform)) {
         throw badRequest('平台标识格式不合法');
       }
-      if (body.commit && !/^[0-9a-fA-F]{7,40}$/.test(body.commit)) {
-        throw badRequest('commit 格式不合法');
+      if (body.commit && !/^[0-9a-fA-F]{40}$/.test(body.commit)) {
+        throw badRequest('commit 必须是 40 位十六进制字符');
       }
       const result = await importRemoteServerPackage({
         tempPath,

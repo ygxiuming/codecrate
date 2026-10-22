@@ -47,6 +47,8 @@ export interface ExtensionItem {
   version: string;
   engineRange?: string | null;
   categories: string[];
+  dependencies: string[];
+  extensionPack: string[];
   downloadCount: number;
   updatedAt?: string;
   versionsCount: number;

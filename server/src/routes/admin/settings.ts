@@ -122,10 +122,12 @@ adminSettingsRouter.put(
 adminSettingsRouter.post(
   '/test-source',
   asyncHandler(async (req, res) => {
-    const { type } = parseBody(
-      z.object({ type: z.enum(['vscode', 'marketplace', 'openvsx', 'remote']) }),
+    const { type: requestedType } = parseBody(
+      z.object({ type: z.enum(['vscode', 'official', 'marketplace', 'openvsx', 'remote']) }),
       req.body,
     );
+    // 旧版前端把官方源称为 marketplace，这里统一映射到适配器 ID。
+    const type = requestedType === 'marketplace' ? 'official' : requestedType;
     const started = Date.now();
     try {
       if (type === 'vscode') {

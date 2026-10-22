@@ -315,6 +315,8 @@ describe('extension upload and parsing', () => {
     expect(item).toBeTruthy();
     expect(item.version).toBe('1.0.0');
     expect(item.engineRange).toBe('^1.95.0');
+    expect(item.dependencies).toContain('demo.publisher.dep-ext');
+    expect(item.extensionPack).toContain('demo.publisher.pack-ext');
     expect(item.iconUrl).toMatch(/^\/icons\/[a-f0-9]{32}\.png$/);
 
     await request(app).get(item.iconUrl).expect(200).expect('Content-Type', /image\/png/);
@@ -326,9 +328,49 @@ describe('extension upload and parsing', () => {
       .expect(409);
     expect(duplicate.body.error.code).toBe('CONFLICT');
   });
+
+  it('keeps a shared icon available after deleting one of the extensions', async () => {
+    const vsixPath = path.join(tmpDir, 'shared-icon.vsix');
+    fs.writeFileSync(
+      vsixPath,
+      await createVsix({
+        publisher: 'demo',
+        name: 'shared-icon',
+        version: '1.0.0',
+        displayName: 'Shared Icon Extension',
+      }),
+    );
+    const upload = await adminAgent
+      .post('/api/admin/extensions/upload')
+      .set('X-Requested-With', XRW)
+      .attach('file', vsixPath)
+      .expect(201);
+    const iconUrl = upload.body.iconUrl as string;
+    expect(iconUrl).toMatch(/^\/icons\/[a-f0-9]{32}\.png$/);
+
+    await adminAgent
+      .delete(`/api/admin/extensions/${upload.body.artifactId}`)
+      .set('X-Requested-With', XRW)
+      .expect(200);
+
+    // demo.demo-ext 仍引用同一内容哈希的图标，删除共享图标的那个插件不能影响它。
+    await request(app).get(iconUrl).expect(200).expect('Content-Type', /image\/png/);
+  });
 });
 
 describe('marketplace caching', () => {
+  it('tests both the official adapter id and the legacy marketplace alias', async () => {
+    for (const type of ['official', 'marketplace']) {
+      const result = await adminAgent
+        .post('/api/admin/settings/test-source')
+        .set('X-Requested-With', XRW)
+        .send({ type })
+        .expect(200);
+      expect(result.body.ok).toBe(true);
+      expect(result.body.provider).toBe('official');
+    }
+  });
+
   it('returns all historical versions in the cache dialog', async () => {
     const detail = await adminAgent
       .get('/api/admin/marketplace/extension?provider=official&id=demo.market-ext')

@@ -9,6 +9,7 @@ import { FetchError, sleep } from '../net/safeFetch';
 import { getSetting } from '../services/settings';
 import { parseVsix } from '../services/vsix';
 import { resolveWithin, safeFilename, storageRelative } from '../storage/paths';
+import { compareVersions } from '../utils/semver';
 import { config } from '../config';
 import { DownloadError, downloadFile } from './downloader';
 import { saveIcon } from './icons';
@@ -470,6 +471,13 @@ async function executeExtensionTask(
       422,
       'VSIX_ID_MISMATCH',
       `vsix 标识 ${parsed.metadata.extensionId} 与市场记录 ${pkg.id} 不一致`,
+    );
+  }
+  if (compareVersions(parsed.metadata.version, pkg.version) !== 0) {
+    throw new ApiError(
+      422,
+      'VSIX_VERSION_MISMATCH',
+      `vsix 版本 ${parsed.metadata.version} 与市场记录 ${pkg.version} 不一致`,
     );
   }
 

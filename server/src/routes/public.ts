@@ -41,6 +41,8 @@ interface ExtensionRow {
   description: string | null;
   engine_range: string | null;
   categories: string;
+  dependencies: string;
+  extension_pack: string;
   download_count: number;
   icon_path: string | null;
   size_bytes: number;
@@ -235,7 +237,7 @@ publicRouter.get(
       rows = getDb()
         .prepare(
           `SELECT id, extension_id, publisher, name, display_name, version, target_platform,
-                  description, engine_range, categories, download_count, icon_path, size_bytes,
+                  description, engine_range, categories, dependencies, extension_pack, download_count, icon_path, size_bytes,
                   published_at, created_at
            FROM extensions
            WHERE (lower(extension_id) LIKE ? OR lower(display_name) LIKE ? OR lower(description) LIKE ?)
@@ -248,7 +250,7 @@ publicRouter.get(
       rows = getDb()
         .prepare(
           `SELECT id, extension_id, publisher, name, display_name, version, target_platform,
-                  description, engine_range, categories, download_count, icon_path, size_bytes,
+                  description, engine_range, categories, dependencies, extension_pack, download_count, icon_path, size_bytes,
                   published_at, created_at
            FROM extensions
            WHERE (lower(extension_id) LIKE ? OR lower(display_name) LIKE ? OR lower(description) LIKE ?)
@@ -259,7 +261,7 @@ publicRouter.get(
       rows = getDb()
         .prepare(
           `SELECT id, extension_id, publisher, name, display_name, version, target_platform,
-                  description, engine_range, categories, download_count, icon_path, size_bytes,
+                  description, engine_range, categories, dependencies, extension_pack, download_count, icon_path, size_bytes,
                   published_at, created_at
            FROM extensions
            WHERE EXISTS (SELECT 1 FROM extension_categories ec
@@ -271,7 +273,7 @@ publicRouter.get(
       rows = getDb()
         .prepare(
           `SELECT id, extension_id, publisher, name, display_name, version, target_platform,
-                  description, engine_range, categories, download_count, icon_path, size_bytes,
+                  description, engine_range, categories, dependencies, extension_pack, download_count, icon_path, size_bytes,
                   published_at, created_at
            FROM extensions ORDER BY id DESC`,
         )
@@ -305,6 +307,8 @@ publicRouter.get(
         version: latestVersion,
         engineRange: primary.engine_range,
         categories: categories.length ? categories : ['Other'],
+        dependencies: parseArray(primary.dependencies),
+        extensionPack: parseArray(primary.extension_pack),
         downloadCount: list.reduce((sum, row) => sum + row.download_count, 0),
         updatedAt: list.map((row) => row.published_at || row.created_at).sort().pop(),
         versionsCount: versions.length,

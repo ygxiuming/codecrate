@@ -131,10 +131,15 @@ async function inspectTarGz(filePath: string): Promise<ServerArchiveInfo | null>
         const data = await reader.read(size);
         if (!data) return null;
         try {
-          return parseProductJson(data);
+          const info = parseProductJson(data);
+          // 先遇到嵌套的 product.json（缺少版本或 commit）时继续向后找顶层文件。
+          if (info.version || info.commit) return info;
         } catch {
-          return null;
+          // 跳过损坏的条目，继续扫描
         }
+        const padding = padded - size;
+        if (padding > 0 && !(await reader.skip(padding))) break;
+        continue;
       }
 
       if (padded > 0 && !(await reader.skip(padded))) break;
@@ -177,23 +182,27 @@ function inspectZip(filePath: string): Promise<ServerArchiveInfo | null> {
           return;
         }
         if (entry.uncompressedSize > MAX_PRODUCT_BYTES) {
-          finish(null);
+          zipfile.readEntry();
           return;
         }
         zipfile.openReadStream(entry, (streamError, stream) => {
           if (streamError || !stream) {
-            finish(null);
+            zipfile.readEntry();
             return;
           }
           const chunks: Buffer[] = [];
           stream.on('data', (chunk: Buffer) => chunks.push(chunk));
           stream.on('error', () => finish(null));
           stream.on('end', () => {
+            let info: ServerArchiveInfo | null = null;
             try {
-              finish(parseProductJson(Buffer.concat(chunks)));
+              info = parseProductJson(Buffer.concat(chunks));
             } catch {
-              finish(null);
+              info = null;
             }
+            // 嵌套条目可能缺少版本或 commit，继续查找下一个 product.json。
+            if (info && (info.version || info.commit)) finish(info);
+            else zipfile.readEntry();
           });
         });
       });

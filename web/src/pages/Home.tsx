@@ -7,8 +7,10 @@ import {
   CloudServerOutlined,
   CodeOutlined,
   DownloadOutlined,
+  GithubOutlined,
   SafetyCertificateOutlined,
   SearchOutlined,
+  StarFilled,
   ThunderboltOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
@@ -24,6 +26,7 @@ import type {
 import { CodeBlock } from '../components/CodeBlock';
 import { ExtensionCard } from '../components/ExtensionCard';
 import { formatBytes, formatNumber } from '../lib/format';
+import { PROJECT } from '../lib/project';
 import { trackSearch } from '../lib/tracker';
 
 export function HomePage() {
@@ -87,6 +90,13 @@ export function HomePage() {
             集中缓存 VS Code 安装包、离线插件与 Remote-SSH Server。管理员联网采集一次，
             内网用户即可随时浏览、校验并下载，无需为每台机器重复准备安装介质。
           </p>
+          <div className="hero-repo">
+            <GithubOutlined />
+            <span>开源项目 · MIT License · 源码与更新见 GitHub</span>
+            <a href={PROJECT.repoUrl} target="_blank" rel="noopener noreferrer">
+              前往仓库 <ArrowRightOutlined />
+            </a>
+          </div>
           <div className="hero-search">
             <Input
               size="large"
@@ -273,6 +283,56 @@ export function HomePage() {
               </div>
             </div>
           ) : null}
+        </div>
+      </section>
+
+      <section className="section-tight">
+        <div className="container">
+          <div className="panel star-card">
+            <div className="star-card-icon">
+              <GithubOutlined />
+            </div>
+            <div className="star-card-body">
+              <Tag color="blue" style={{ borderRadius: 999 }}>
+                开源 · {PROJECT.license}
+              </Tag>
+              <h2>喜欢 CodeCrate？在 GitHub 给我们一颗 Star</h2>
+              <p>
+                {PROJECT.description}
+                如果它帮你解决了隔离内网的 VS Code 离线部署问题，欢迎点个 Star、提交 Issue
+                或参与贡献，这是对项目最直接的支持。
+              </p>
+              <div className="star-card-actions">
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<StarFilled />}
+                  href={PROJECT.repoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  去 GitHub 点 Star
+                </Button>
+                <Button
+                  size="large"
+                  icon={<GithubOutlined />}
+                  href={PROJECT.repoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  查看源码
+                </Button>
+                <a
+                  className="star-card-link"
+                  href={PROJECT.issuesUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  反馈问题
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
