@@ -3,14 +3,16 @@ import type { Request } from 'express';
 import { getDb, nowIso } from '../db';
 import { ipFamily } from '../net/ipGuard';
 import { getSetting } from '../services/settings';
-import { findArtifact } from '../storage/artifacts';
+import { findArtifact, isArtifactType } from '../storage/artifacts';
 import { normalizeIp } from './visitor';
 
 export const clientEventSchema = z.object({
   type: z.enum(['page_view', 'click', 'search']),
   path: z.string().max(300).optional(),
   target: z.string().max(200).optional(),
-  resourceType: z.enum(['vscode', 'extension', 'remote-server']).optional(),
+  resourceType: z
+    .enum(['vscode', 'extension', 'remote-server', 'software', 'public_file', 'share'])
+    .optional(),
   resourceId: z.number().int().positive().optional(),
   metadata: z
     .record(z.union([z.string().max(200), z.number(), z.boolean()]))
@@ -84,7 +86,7 @@ export function recordClientEvents(req: Request, events: ClientEvent[]): number 
       }
       let resourceType = event.resourceType ?? null;
       let resourceId = event.resourceId ?? null;
-      if (resourceType && resourceId) {
+      if (resourceType && resourceId && isArtifactType(resourceType)) {
         if (!findArtifact(resourceType, resourceId)) {
           resourceType = null;
           resourceId = null;
@@ -112,7 +114,7 @@ export function recordClientEvents(req: Request, events: ClientEvent[]): number 
 }
 
 export interface DownloadEventInput {
-  resourceType: 'vscode' | 'extension' | 'remote-server';
+  resourceType: 'vscode' | 'extension' | 'remote-server' | 'software' | 'public_file' | 'share';
   resourceId: number;
   filename: string;
   statusCode: number;

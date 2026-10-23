@@ -3,7 +3,7 @@ import { Button } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 import { trackClick } from '../lib/tracker';
 
-type ResourceType = 'vscode' | 'extension' | 'remote-server';
+type ResourceType = 'vscode' | 'extension' | 'remote-server' | 'software' | 'public_file';
 
 interface Props {
   resourceType: ResourceType;
@@ -33,7 +33,9 @@ export function DownloadButton({
       resourceId: artifactId,
       metadata: { filename },
     });
-    window.location.href = `/api/download/${resourceType}/${artifactId}`;
+    // 下载路由用连字符段（public-file），埋点枚举用下划线（public_file）
+    const urlType = resourceType === 'public_file' ? 'public-file' : resourceType;
+    window.location.href = `/api/download/${urlType}/${artifactId}`;
   };
 
   return (

@@ -5,7 +5,9 @@ import { bootstrapAdmin } from './bootstrap';
 import { config, ensureRuntimeDirs } from './config';
 import { closeDb, getDb } from './db';
 import { logger } from './logger';
+import { startExpiryJob } from './services/expiry';
 import { startQueue, stopQueue } from './services/queue';
+import { startSoftwareScanJob } from './services/softwareScan';
 import { ensureCookieSecret } from './services/settings';
 
 async function main(): Promise<void> {
@@ -16,6 +18,8 @@ async function main(): Promise<void> {
   cleanupExpiredSessions();
   startQueue();
   const stopMaintenance = startMaintenanceJob();
+  const stopExpiry = startExpiryJob();
+  const stopSoftwareScan = startSoftwareScanJob();
 
   const app = createApp();
   const server = app.listen(config.port, config.host, () => {
@@ -26,7 +30,7 @@ async function main(): Promise<void> {
         dbPath: config.dbPath,
         webDist: config.webDist,
       },
-      'CodeCrate 离线部署源已启动',
+      'CodeCrate 内网资源分发平台已启动',
     );
   });
 
@@ -37,6 +41,8 @@ async function main(): Promise<void> {
     logger.info({ signal }, '正在优雅关闭');
     stopQueue();
     stopMaintenance();
+    stopExpiry();
+    stopSoftwareScan();
     server.close(() => {
       closeDb();
       process.exit(0);

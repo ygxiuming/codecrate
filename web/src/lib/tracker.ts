@@ -2,7 +2,7 @@ interface TrackEvent {
   type: 'page_view' | 'click' | 'search';
   path?: string;
   target?: string;
-  resourceType?: 'vscode' | 'extension' | 'remote-server';
+  resourceType?: 'vscode' | 'extension' | 'remote-server' | 'software' | 'public_file' | 'share';
   resourceId?: number;
   metadata?: Record<string, string | number | boolean>;
 }
@@ -68,7 +68,7 @@ export function trackSearch(keyword: string): void {
 export function trackClick(
   target: string,
   options: {
-    resourceType?: 'vscode' | 'extension' | 'remote-server';
+    resourceType?: 'vscode' | 'extension' | 'remote-server' | 'software' | 'public_file' | 'share';
     resourceId?: number;
     metadata?: Record<string, string | number | boolean>;
   } = {},

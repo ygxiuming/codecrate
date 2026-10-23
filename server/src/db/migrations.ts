@@ -197,7 +197,93 @@ CREATE INDEX IF NOT EXISTS idx_remote_commit_platform
   ON remote_servers(commit_hash, platform);
 `;
 
-const MIGRATIONS: string[] = [MIGRATION_001, MIGRATION_002, MIGRATION_003];
+const MIGRATION_004 = `
+CREATE TABLE IF NOT EXISTS software_packages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  version TEXT NOT NULL DEFAULT '',
+  platform TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '未分类',
+  description_md TEXT NOT NULL DEFAULT '',
+  filename TEXT NOT NULL,
+  stored_path TEXT NOT NULL UNIQUE,
+  size_bytes INTEGER NOT NULL DEFAULT 0,
+  sha256 TEXT NOT NULL DEFAULT '',
+  download_count INTEGER NOT NULL DEFAULT 0,
+  source TEXT NOT NULL DEFAULT 'upload',
+  verified_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE INDEX IF NOT EXISTS idx_software_category ON software_packages(category);
+CREATE INDEX IF NOT EXISTS idx_software_name ON software_packages(name);
+
+CREATE TABLE IF NOT EXISTS comments (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  target_type TEXT NOT NULL CHECK (target_type IN ('board','software')),
+  target_id INTEGER NOT NULL DEFAULT 0,
+  parent_id INTEGER,
+  reply_to_id INTEGER,
+  reply_to_nickname TEXT NOT NULL DEFAULT '',
+  nickname TEXT NOT NULL DEFAULT '',
+  content TEXT NOT NULL,
+  ip TEXT NOT NULL DEFAULT '',
+  ip_family TEXT,
+  user_agent TEXT NOT NULL DEFAULT '',
+  pinned INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE INDEX IF NOT EXISTS idx_comments_target
+  ON comments(target_type, target_id, pinned DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments(parent_id);
+
+CREATE TABLE IF NOT EXISTS public_files (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  filename TEXT NOT NULL,
+  stored_path TEXT NOT NULL UNIQUE,
+  size_bytes INTEGER NOT NULL DEFAULT 0,
+  sha256 TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
+  uploader_ip TEXT NOT NULL DEFAULT '',
+  visitor_id TEXT NOT NULL DEFAULT '',
+  download_count INTEGER NOT NULL DEFAULT 0,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE INDEX IF NOT EXISTS idx_public_files_expires ON public_files(expires_at);
+
+CREATE TABLE IF NOT EXISTS file_shares (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  filename TEXT NOT NULL,
+  stored_path TEXT NOT NULL UNIQUE,
+  size_bytes INTEGER NOT NULL DEFAULT 0,
+  sha256 TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
+  code_hash TEXT NOT NULL,
+  code_hmac TEXT NOT NULL UNIQUE,
+  max_downloads INTEGER,
+  download_count INTEGER NOT NULL DEFAULT 0,
+  uploader_ip TEXT NOT NULL DEFAULT '',
+  visitor_id TEXT NOT NULL DEFAULT '',
+  revoked INTEGER NOT NULL DEFAULT 0,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE INDEX IF NOT EXISTS idx_file_shares_expires ON file_shares(expires_at);
+`;
+
+const MIGRATION_005 = `
+CREATE INDEX IF NOT EXISTS idx_public_files_sha256 ON public_files(sha256);
+CREATE INDEX IF NOT EXISTS idx_software_sha256 ON software_packages(sha256);
+`;
+
+const MIGRATIONS: string[] = [
+  MIGRATION_001,
+  MIGRATION_002,
+  MIGRATION_003,
+  MIGRATION_004,
+  MIGRATION_005,
+];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
 

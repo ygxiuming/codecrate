@@ -6,6 +6,7 @@ import {
   ApiOutlined,
   BookOutlined,
   CloudServerOutlined,
+  CloudUploadOutlined,
   QuestionCircleOutlined,
   SettingOutlined,
   ToolOutlined,
@@ -27,6 +28,7 @@ const TABS = [
   { key: 'extension-install', label: '离线安装插件', file: 'extension-install', icon: <ToolOutlined /> },
   { key: 'vscode-gallery', label: 'VS Code 接入', file: 'vscode-gallery', icon: <ApiOutlined /> },
   { key: 'remote-ssh', label: 'Remote-SSH', file: 'remote-ssh', icon: <CloudServerOutlined /> },
+  { key: 'file-zone', label: '文件区与取件', file: 'file-zone', icon: <CloudUploadOutlined /> },
   { key: 'admin-guide', label: '管理员手册', file: 'admin-guide', icon: <SettingOutlined /> },
   { key: 'faq', label: '常见问题', file: 'faq', icon: <QuestionCircleOutlined /> },
 ];

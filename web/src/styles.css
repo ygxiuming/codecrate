@@ -82,6 +82,16 @@ a:hover {
 }
 
 /* ---------- Public header ---------- */
+.public-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.public-shell > main {
+  flex: 1 0 auto;
+}
+
 .public-header {
   position: sticky;
   top: 0;
@@ -91,11 +101,59 @@ a:hover {
   border-bottom: 1px solid var(--line);
 }
 
-.public-header-inner {
+.public-header-top {
   display: flex;
   align-items: center;
-  gap: 28px;
-  height: 66px;
+  justify-content: space-between;
+  gap: 20px;
+  height: 64px;
+}
+
+.public-nav-bar {
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.public-nav-inner {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+
+.public-nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 16px;
+  color: var(--ink-2);
+  font-weight: 500;
+  font-size: 13.5px;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.public-nav-link:hover {
+  color: var(--ink);
+  background: rgba(0, 120, 212, 0.06);
+}
+
+.public-nav-link.active {
+  color: #0078d4;
+  font-weight: 600;
+}
+
+.public-nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 2.5px;
+  border-radius: 2px 2px 0 0;
+  background: #0078d4;
 }
 
 .brand {
@@ -130,19 +188,6 @@ a:hover {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.02em;
-}
-
-.public-nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 1;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.public-nav::-webkit-scrollbar {
-  display: none;
 }
 
 .nav-link {
@@ -389,6 +434,10 @@ a:hover {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+}
+
+.feature-grid-auto {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
 }
 
 .feature-card {
@@ -1304,7 +1353,7 @@ a:hover {
   .hero-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .public-header-inner {
+  .public-header-top {
     gap: 10px;
   }
   .brand small {
@@ -1313,12 +1362,11 @@ a:hover {
   .header-meta {
     display: none;
   }
-  .public-nav .nav-link > span:not(.anticon),
-  .header-actions .ant-tag {
+  .public-nav-link > span:not(.anticon) {
     display: none;
   }
-  .public-nav .nav-link {
-    padding: 8px 10px;
+  .public-nav-link {
+    padding: 10px 13px;
   }
   .header-actions {
     gap: 6px;
@@ -1451,4 +1499,120 @@ a:hover {
   .public-footer-inner {
     align-items: flex-start;
   }
+}
+
+/* ---------------- 评论区 ---------------- */
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.comment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(390px, 1fr));
+  align-items: start;
+}
+
+@media (max-width: 980px) {
+  .comment-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.comment-item {
+  border: 1px solid #e5ecf3;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fbfdff;
+}
+
+.comment-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.comment-ip {
+  border: none;
+  background: #eef3f9;
+  color: #5b7ba6;
+  font-size: 11.5px;
+  border-radius: 999px;
+  padding: 1px 8px;
+  cursor: pointer;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+}
+
+.comment-body {
+  margin: 8px 0 4px 38px;
+  font-size: 13.5px;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #2f3f52;
+}
+
+.comment-actions {
+  margin-left: 38px;
+}
+
+.comment-replies {
+  margin: 8px 0 0 38px;
+  border-left: 2px solid #e5ecf3;
+  padding-left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.comment-reply {
+  padding: 8px 10px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #edf2f8;
+}
+
+.comment-reply .comment-body {
+  margin-left: 0;
+}
+
+.comment-reply .comment-actions {
+  margin-left: 0;
+}
+
+.comment-reply-form {
+  margin-left: 38px;
+  background: #fff;
+  border: 1px solid #e5ecf3;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+/* ---------------- 软件包卡片 ---------------- */
+
+.software-card {
+  border: 1px solid #e5ecf3;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.software-card:hover {
+  border-color: #8ec2f5;
+  box-shadow: 0 6px 18px rgba(0, 88, 180, 0.08);
+}
+
+/* ---------------- 文件区卡片 ---------------- */
+
+.zone-file-item {
+  border: 1px solid #e5ecf3;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fff;
+}
+
+.zone-countdown {
+  font-variant-numeric: tabular-nums;
 }

@@ -30,6 +30,7 @@ export function ExtensionsPage() {
   const category = params.get('category') ?? '';
   const sort = params.get('sort') ?? 'downloads';
   const page = Math.max(1, Number(params.get('page') ?? '1') || 1);
+  const pageSize = Math.min(50, Math.max(10, Number(params.get('size') ?? '10') || 10));
 
   const [keyword, setKeyword] = useState(q);
   const [data, setData] = useState<ExtensionListResponse | null>(null);
@@ -56,14 +57,14 @@ export function ExtensionsPage() {
     setLoading(true);
     api
       .get<ExtensionListResponse>(
-        `/api/public/extensions${qs({ q, category, sort, page, pageSize: 12 })}`,
+        `/api/public/extensions${qs({ q, category, sort, page, pageSize })}`,
       )
       .then(setData)
       .catch(() =>
-        setData({ items: [], total: 0, page: 1, pageSize: 12, categories: [] }),
+        setData({ items: [], total: 0, page: 1, pageSize, categories: [] }),
       )
       .finally(() => setLoading(false));
-  }, [q, category, sort, page]);
+  }, [q, category, sort, page, pageSize]);
 
   useEffect(() => {
     load();
@@ -169,8 +170,12 @@ export function ExtensionsPage() {
                 current={data.page}
                 pageSize={data.pageSize}
                 total={data.total}
+                showSizeChanger
+                pageSizeOptions={[10, 20, 50]}
                 showTotal={(total) => `共 ${total} 个插件`}
-                onChange={(nextPage) => updateParams({ page: String(nextPage) }, false)}
+                onChange={(nextPage, nextSize) =>
+                  updateParams({ page: String(nextPage), size: String(nextSize) }, false)
+                }
               />
             </div>
           </>

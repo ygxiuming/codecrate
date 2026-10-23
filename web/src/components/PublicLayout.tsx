@@ -1,15 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Input, Modal, Tag } from 'antd';
 import {
   AppstoreOutlined,
   BookOutlined,
   CloudServerOutlined,
+  CloudUploadOutlined,
   CodeOutlined,
+  CommentOutlined,
   GithubOutlined,
   HomeOutlined,
+  InboxOutlined,
   LockOutlined,
   LoginOutlined,
   NotificationOutlined,
+  QrcodeOutlined,
   SafetyCertificateOutlined,
   StarOutlined,
 } from '@ant-design/icons';
@@ -19,12 +23,43 @@ import type { Announcement, PublicConfig } from '../api/types';
 import { PROJECT } from '../lib/project';
 import { trackClick, trackPageView } from '../lib/tracker';
 
-const NAV_ITEMS = [
-  { to: '/', label: '首页', icon: <HomeOutlined /> },
-  { to: '/vscode', label: 'VS Code 安装包', icon: <CodeOutlined /> },
-  { to: '/extensions', label: '离线插件', icon: <AppstoreOutlined /> },
-  { to: '/remote-ssh', label: 'Remote-SSH', icon: <CloudServerOutlined /> },
-  { to: '/docs', label: '使用说明', icon: <BookOutlined /> },
+interface NavItem {
+  to: string;
+  label: string;
+  icon: JSX.Element;
+  visible: (config: PublicConfig | null) => boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { to: '/', label: '首页', icon: <HomeOutlined />, visible: () => true },
+  { to: '/vscode', label: 'VS Code', icon: <CodeOutlined />, visible: () => true },
+  { to: '/extensions', label: '离线插件', icon: <AppstoreOutlined />, visible: () => true },
+  { to: '/remote-ssh', label: 'Remote-SSH', icon: <CloudServerOutlined />, visible: () => true },
+  {
+    to: '/software',
+    label: '软件包',
+    icon: <InboxOutlined />,
+    visible: () => true,
+  },
+  {
+    to: '/zone',
+    label: '公共区',
+    icon: <CloudUploadOutlined />,
+    visible: (config) => config?.publicEnabled !== false,
+  },
+  {
+    to: '/pickup',
+    label: '取件',
+    icon: <QrcodeOutlined />,
+    visible: (config) => config?.shareEnabled !== false,
+  },
+  {
+    to: '/board',
+    label: '留言板',
+    icon: <CommentOutlined />,
+    visible: (config) => config?.commentsEnabled !== false,
+  },
+  { to: '/docs', label: '使用说明', icon: <BookOutlined />, visible: () => true },
 ];
 
 function BrandMark() {
@@ -159,33 +194,24 @@ export function PublicLayout() {
     return () => window.removeEventListener('access-required', handler);
   }, []);
 
-  const siteName = config?.siteName ?? 'CodeCrate 离线部署源';
+  const siteName = config?.siteName ?? 'CodeCrate 内网资源分发平台';
   const locked = Boolean(access?.required && !access?.authenticated);
+  const navItems = useMemo(
+    () => NAV_ITEMS.filter((item) => item.visible(config)),
+    [config],
+  );
 
   return (
-    <div>
+    <div className="public-shell">
       <header className="public-header">
-        <div className="container public-header-inner">
+        <div className="container public-header-top">
           <Link to="/" className="brand" aria-label={siteName}>
             <BrandMark />
             <span>
               {siteName}
-              <small>内网离线分发平台</small>
+              <small>内网资源分发平台</small>
             </span>
           </Link>
-          <nav className="public-nav">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/'}
-                className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
           <div className="header-actions">
             <a
               href={PROJECT.repoUrl}
@@ -208,6 +234,21 @@ export function PublicLayout() {
             </Tag>
           </div>
         </div>
+        <nav className="public-nav-bar">
+          <div className="container public-nav-inner">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) => `public-nav-link${isActive ? ' active' : ''}`}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </nav>
       </header>
 
       {locked ? (
@@ -266,7 +307,7 @@ export function PublicLayout() {
           <div className="public-footer-meta">
             <strong style={{ color: '#425466' }}>{siteName}</strong>
             <span>
-              离线资源仅限内网使用，请勿将下载文件外传 · 基于开源项目{' '}
+              内网资源仅限本网络使用，请勿将下载文件外传 · 基于开源项目{' '}
               <a href={PROJECT.repoUrl} target="_blank" rel="noopener noreferrer">
                 CodeCrate
               </a>{' '}

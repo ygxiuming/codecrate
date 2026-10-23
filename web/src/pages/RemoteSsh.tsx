@@ -39,6 +39,7 @@ export function RemoteSshPage() {
   const [keyword, setKeyword] = useState('');
   const [appliedKeyword, setAppliedKeyword] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [data, setData] = useState<{ items: RemoteVersion[]; total: number; page: number; pageSize: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [updateBase, setUpdateBase] = useState(
@@ -65,12 +66,12 @@ export function RemoteSshPage() {
     setLoading(true);
     api
       .get<{ items: RemoteVersion[]; total: number; page: number; pageSize: number }>(
-        `/api/public/remote-servers${qs({ page, pageSize: 8, platform, q: appliedKeyword })}`,
+        `/api/public/remote-servers${qs({ page, pageSize, platform, q: appliedKeyword })}`,
       )
       .then(setData)
-      .catch(() => setData({ items: [], total: 0, page: 1, pageSize: 8 }))
+      .catch(() => setData({ items: [], total: 0, page: 1, pageSize }))
       .finally(() => setLoading(false));
-  }, [page, platform, appliedKeyword]);
+  }, [page, pageSize, platform, appliedKeyword]);
 
   useEffect(() => {
     load();
@@ -272,8 +273,13 @@ export function RemoteSshPage() {
                 current={data.page}
                 pageSize={data.pageSize}
                 total={data.total}
+                showSizeChanger
+                pageSizeOptions={[10, 20, 50]}
                 showTotal={(total) => `共 ${total} 个版本`}
-                onChange={(nextPage) => setPage(nextPage)}
+                onChange={(nextPage, nextSize) => {
+                  setPage(nextPage);
+                  setPageSize(nextSize);
+                }}
               />
             </div>
           </>

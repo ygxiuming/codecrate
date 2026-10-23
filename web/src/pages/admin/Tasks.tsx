@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type Key } from 'react';
 import {
   Button,
   Descriptions,
@@ -6,14 +6,16 @@ import {
   Popconfirm,
   Progress,
   Select,
+  Space,
+  Statistic,
   Table,
   Tag,
   Timeline,
   Tooltip,
   message,
 } from 'antd';
-import { ReloadOutlined, SyncOutlined } from '@ant-design/icons';
-import type { TaskEvent, TaskRow } from '../../api/types';
+import { ClearOutlined, ReloadOutlined, SyncOutlined } from '@ant-design/icons';
+import type { TaskEvent, TaskRow, TaskStats } from '../../api/types';
 import { api, qs } from '../../api/client';
 import { formatBytes, formatDate } from '../../lib/format';
 import { TASK_KIND_LABEL, TaskKindTag, TaskStatusTag, taskPercent } from '../../lib/labels';
@@ -23,10 +25,19 @@ export function TasksPage() {
   const [kind, setKind] = useState<string | undefined>();
   const [page, setPage] = useState(1);
   const [data, setData] = useState<{ items: TaskRow[]; total: number; page: number; pageSize: number } | null>(null);
+  const [stats, setStats] = useState<TaskStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedKeys, setSelectedKeys] = useState<Key[]>([]);
   const [detail, setDetail] = useState<{ task: TaskRow; events: TaskEvent[] } | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  const loadStats = useCallback(() => {
+    api
+      .get<{ stats: TaskStats }>('/api/admin/tasks/stats')
+      .then((result) => setStats(result.stats))
+      .catch(() => undefined);
+  }, []);
 
   const load = useCallback(
     (silent = false) => {
@@ -42,8 +53,9 @@ export function TasksPage() {
         .finally(() => {
           if (!silent) setLoading(false);
         });
+      loadStats();
     },
-    [status, kind, page],
+    [status, kind, page, loadStats],
   );
 
   useEffect(() => {
@@ -52,10 +64,18 @@ export function TasksPage() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      if (!document.hidden) load(true);
+      if (!document.hidden) {
+        load(true);
+        if (detailOpen && detail) {
+          void api
+            .get<{ task: TaskRow; events: TaskEvent[] }>(`/api/admin/tasks/${detail.task.id}`)
+            .then(setDetail)
+            .catch(() => undefined);
+        }
+      }
     }, 3000);
     return () => window.clearInterval(timer);
-  }, [load]);
+  }, [load, detailOpen, detail]);
 
   const openDetail = async (id: number): Promise<void> => {
     setDetailOpen(true);
@@ -96,11 +116,65 @@ export function TasksPage() {
     try {
       const result = await api.post<{ retried: number }>('/api/admin/tasks/retry-failed');
       message.success(`已重新排队 ${result.retried} 个失败任务`);
+      setSelectedKeys([]);
       load(true);
     } catch (error) {
       message.error((error as Error).message);
     }
   };
+
+  const batchRetry = async (): Promise<void> => {
+    const ids = selectedKeys.map(Number).filter((value) => Number.isFinite(value));
+    if (ids.length === 0) return;
+    let retried = 0;
+    let skipped = 0;
+    for (const id of ids) {
+      try {
+        await api.post(`/api/admin/tasks/${id}/retry`);
+        retried += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+    message.success(`已重新排队 ${retried} 个任务${skipped ? `，${skipped} 个跳过` : ''}`);
+    setSelectedKeys([]);
+    load(true);
+  };
+
+  const batchCancel = async (): Promise<void> => {
+    const ids = selectedKeys.map(Number).filter((value) => Number.isFinite(value));
+    if (ids.length === 0) return;
+    let canceled = 0;
+    let skipped = 0;
+    for (const id of ids) {
+      try {
+        await api.post(`/api/admin/tasks/${id}/cancel`);
+        canceled += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+    message.success(`已取消 ${canceled} 个任务${skipped ? `，${skipped} 个跳过` : ''}`);
+    setSelectedKeys([]);
+    load(true);
+  };
+
+  const clearFinished = async (statuses: string[]): Promise<void> => {
+    try {
+      const result = await api.post<{ cleared: number }>('/api/admin/tasks/clear', { statuses });
+      message.success(`已清理 ${result.cleared} 个任务`);
+      setSelectedKeys([]);
+      load(true);
+    } catch (error) {
+      message.error((error as Error).message);
+    }
+  };
+
+  const rows = data?.items ?? [];
+  const selectedIds = new Set(selectedKeys.map(Number));
+  const selectedRows = rows.filter((row) => selectedIds.has(row.id));
+  const canBatchRetry = selectedRows.some((row) => row.status === 'failed' || row.status === 'canceled');
+  const canBatchCancel = selectedRows.some((row) => row.status === 'queued' || row.status === 'running');
 
   return (
     <div className="stack">
@@ -109,6 +183,14 @@ export function TasksPage() {
         <p>
           缓存任务以「版本 × 平台」为单位。失败任务会自动退避重试；页面每 3 秒刷新一次状态。
         </p>
+      </div>
+
+      <div className="panel" style={{ display: 'flex', gap: 32, flexWrap: 'wrap', padding: '14px 20px' }}>
+        <Statistic title="排队中" value={stats?.queued ?? 0} />
+        <Statistic title="下载中" value={stats?.running ?? 0} />
+        <Statistic title="成功" value={stats?.success ?? 0} valueStyle={{ color: '#2e7d32' }} />
+        <Statistic title="失败" value={stats?.failed ?? 0} valueStyle={{ color: stats?.failed ? '#d92d20' : undefined }} />
+        <Statistic title="已取消" value={stats?.canceled ?? 0} />
       </div>
 
       <div className="panel">
@@ -153,16 +235,58 @@ export function TasksPage() {
           >
             <Button icon={<SyncOutlined />}>重试全部失败</Button>
           </Popconfirm>
+          <Popconfirm
+            title="清理已完成与已取消任务？"
+            description="会删除任务记录与事件日志，不影响已缓存的文件。"
+            okText="清理"
+            cancelText="取消"
+            onConfirm={() => void clearFinished(['success', 'canceled'])}
+          >
+            <Button icon={<ClearOutlined />}>清理已完成</Button>
+          </Popconfirm>
+          {stats?.failed ? (
+            <Popconfirm
+              title="清理全部失败任务？"
+              description="失败任务记录将被删除；如需保留请先重试。"
+              okText="清理"
+              cancelText="取消"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => void clearFinished(['failed'])}
+            >
+              <Button icon={<ClearOutlined />} danger>
+                清理失败
+              </Button>
+            </Popconfirm>
+          ) : null}
           <Tag color="processing" style={{ marginLeft: 'auto', borderRadius: 999 }}>
             自动刷新中
           </Tag>
         </div>
 
+        {selectedKeys.length > 0 ? (
+          <Space style={{ marginBottom: 12 }} wrap>
+            <span className="muted">已选 {selectedKeys.length} 项：</span>
+            {canBatchRetry ? (
+              <Button size="small" type="primary" onClick={() => void batchRetry()}>
+                批量重试
+              </Button>
+            ) : null}
+            {canBatchCancel ? (
+              <Button size="small" danger onClick={() => void batchCancel()}>
+                批量取消
+              </Button>
+            ) : null}
+            <Button size="small" onClick={() => setSelectedKeys([])}>
+              取消选择
+            </Button>
+          </Space>
+        ) : null}
+
         <Table<TaskRow>
           rowKey="id"
           size="middle"
           loading={loading}
-          dataSource={data?.items ?? []}
+          dataSource={rows}
           pagination={{
             current: data?.page ?? page,
             pageSize: data?.pageSize ?? 20,
@@ -171,6 +295,13 @@ export function TasksPage() {
             onChange: (nextPage) => setPage(nextPage),
           }}
           scroll={{ x: 1100 }}
+          rowSelection={{
+            selectedRowKeys: selectedKeys,
+            onChange: (keys) => setSelectedKeys(keys),
+            getCheckboxProps: (row) => ({
+              disabled: row.status === 'success',
+            }),
+          }}
           columns={[
             { title: 'ID', dataIndex: 'id', width: 70 },
             {

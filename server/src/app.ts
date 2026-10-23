@@ -17,7 +17,10 @@ import { downloadRouter } from './routes/downloads';
 import { eventsRouter } from './routes/events';
 import { galleryRouter } from './routes/gallery';
 import { healthRouter } from './routes/health';
+import { publicCommentsRouter } from './routes/publicComments';
+import { publicFilesRouter } from './routes/publicFiles';
 import { publicRouter } from './routes/public';
+import { shareRouter } from './routes/share';
 import { vscodeUpdateRouter } from './routes/vscodeUpdate';
 import { iconDirectory } from './services/icons';
 
@@ -90,6 +93,9 @@ export function createApp(): express.Express {
   app.use('/api/auth', authRouter);
   app.use('/api/access', accessRouter);
   app.use('/api/public', publicRouter);
+  app.use('/api/public', publicFilesRouter);
+  app.use('/api/public', publicCommentsRouter);
+  app.use('/api/share', shareRouter);
   app.use('/api/events', eventsRouter);
   app.use('/api/gallery', galleryRouter);
   app.use('/api/vscode-update', vscodeUpdateRouter);

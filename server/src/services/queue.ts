@@ -826,3 +826,22 @@ export function queueStats(): Record<string, number> {
   for (const row of rows) stats[row.status] = row.count;
   return stats;
 }
+
+const CLEARABLE_STATUSES = new Set(['success', 'failed', 'canceled']);
+
+/** 清理已完成/已失败/已取消的任务（事件随外键级联删除），运行中的任务不受影响。 */
+export function clearFinishedTasks(statuses: string[]): number {
+  const allowed = statuses.filter((status) => CLEARABLE_STATUSES.has(status));
+  if (allowed.length === 0) return 0;
+  const placeholders = allowed.map(() => '?').join(', ');
+  const rows = getDb()
+    .prepare(`SELECT id FROM tasks WHERE status IN (${placeholders})`)
+    .all(...allowed) as Array<{ id: number }>;
+  if (rows.length === 0) return 0;
+  const transaction = getDb().transaction(() => {
+    const remove = getDb().prepare(`DELETE FROM tasks WHERE id = ? AND status IN (${placeholders})`);
+    for (const row of rows) remove.run(row.id, ...allowed);
+  });
+  transaction();
+  return rows.length;
+}

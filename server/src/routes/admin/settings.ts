@@ -52,6 +52,34 @@ const settingsSchema = z
       .min(1024 * 1024)
       .max(4 * 1024 * 1024 * 1024)
       .optional(),
+    'upload.software_max_bytes': z
+      .number()
+      .int()
+      .min(1024 * 1024)
+      .max(4 * 1024 * 1024 * 1024)
+      .optional(),
+    'software.scan_interval_minutes': z.number().int().min(0).max(1440).optional(),
+    'comments.enabled': z.boolean().optional(),
+    'comments.mask_ip': z.boolean().optional(),
+    'public.enabled': z.boolean().optional(),
+    'public.max_file_bytes': z
+      .number()
+      .int()
+      .min(1024 * 1024)
+      .max(4 * 1024 * 1024 * 1024)
+      .optional(),
+    'public.retention_days': z.number().int().min(1).max(3650).optional(),
+    'public.blocked_extensions': z
+      .array(z.string().trim().max(20).regex(/^\.?[A-Za-z0-9]+$/, '扩展名格式不合法'))
+      .max(100)
+      .optional(),
+    'public.quota_bytes': z.number().int().min(0).max(1024 * 1024 * 1024 * 1024).optional(),
+    'share.enabled': z.boolean().optional(),
+    'share.default_hours': z.number().int().min(1).max(8760).optional(),
+    'share.max_hours': z.number().int().min(1).max(8760).optional(),
+    'limits.upload_per_10min': z.number().int().min(0).max(10000).optional(),
+    'limits.comment_per_min': z.number().int().min(0).max(10000).optional(),
+    'limits.redeem_per_15min': z.number().int().min(0).max(10000).optional(),
     'access_log.enabled': z.boolean().optional(),
     'access_log.retention_days': z
       .number()
@@ -94,7 +122,14 @@ adminSettingsRouter.put(
     const accessCode = parsed['access.code'];
     const patch: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(parsed)) {
-      if (key !== 'access.code' && value !== undefined) patch[key] = value;
+      if (key === 'access.code' || value === undefined) continue;
+      if (key === 'public.blocked_extensions' && Array.isArray(value)) {
+        patch[key] = value
+          .map((item) => String(item).trim().toLowerCase().replace(/^\./, ''))
+          .filter(Boolean);
+        continue;
+      }
+      patch[key] = value;
     }
     if (Object.keys(patch).length > 0) setSettings(patch);
 

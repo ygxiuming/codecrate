@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { NextFunction, Request, Response } from 'express';
 import { Router } from 'express';
 import { recordDownloadEvent } from '../analytics/events';
 import { requireUserAccess } from '../auth/middleware';
@@ -8,6 +9,8 @@ import { ApiError, asyncHandler, notFound } from '../http/errors';
 import { intParam } from '../http/validate';
 import { logger } from '../logger';
 import { getSetting } from '../services/settings';
+import { getPublicFileById } from '../services/fileZone';
+import { getDb, nowIso } from '../db';
 import {
   assertArtifactType,
   findArtifact,
@@ -20,6 +23,86 @@ export const downloadRouter = Router();
 const activeDownloads = new Map<string, number>();
 
 downloadRouter.use(requireUserAccess);
+
+async function handlePublicFileDownload(req: Request, res: Response, next: NextFunction): Promise<void> {
+  await (async () => {
+    const id = intParam(req.params.id, {
+      fallback: 0,
+      min: 1,
+      max: Number.MAX_SAFE_INTEGER,
+      name: 'id',
+    });
+    const row = getPublicFileById(id);
+    if (!row) throw notFound('文件不存在或已过期');
+    if (row.expires_at <= nowIso()) throw notFound('文件已过期清理');
+
+    // 仅允许发送 public/ 区内的落盘文件：前缀白名单 + 存储根双重校验
+    const storedKey = row.stored_path;
+    if (!storedKey || storedKey.startsWith('/') || storedKey.split('/').includes('..')) {
+      throw new ApiError(400, 'INVALID_PATH', '非法的存储路径');
+    }
+    if (!storedKey.startsWith('public/')) {
+      throw new ApiError(400, 'INVALID_PATH', '非法的存储路径');
+    }
+    const absolute = resolveWithin(storedKey);
+    const root = path.resolve(config.storageDir);
+    if (!absolute.startsWith(`${root}${path.sep}`)) {
+      throw new ApiError(400, 'INVALID_PATH', '非法的存储路径');
+    }
+    const stat = await fs.promises.stat(absolute).catch(() => null);
+    if (!stat || !stat.isFile()) throw notFound('文件已丢失');
+
+    const startedAt = Date.now();
+    const rangeHeader = typeof req.headers.range === 'string' ? req.headers.range : '';
+    const rangeMatch = rangeHeader.match(/^bytes=(\d+)-/);
+    const rangeStart = rangeMatch ? Number(rangeMatch[1]) : 0;
+
+    res.once('finish', () => {
+      if (req.method !== 'GET') return;
+      recordDownloadEvent(req, {
+        resourceType: 'public_file',
+        resourceId: id,
+        filename: row.filename,
+        statusCode: res.statusCode,
+        bytesSent: Number(res.getHeader('content-length') ?? 0),
+        rangeStart,
+        durationMs: Date.now() - startedAt,
+      });
+      if (rangeStart === 0 && (res.statusCode === 200 || res.statusCode === 206)) {
+        getDb()
+          .prepare('UPDATE public_files SET download_count = download_count + 1 WHERE id = ?')
+          .run(id);
+      }
+    });
+
+    res.sendFile(
+      storedKey,
+      {
+        root: config.storageDir,
+        dotfiles: 'deny',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': contentDisposition(row.filename),
+          'X-Content-Type-Options': 'nosniff',
+          'Accept-Ranges': 'bytes',
+          'Cache-Control': 'no-store',
+        },
+      },
+      (error) => {
+        if (!error) return;
+        if (res.headersSent) {
+          res.destroy();
+          return;
+        }
+        next(error);
+      },
+    );
+  })();
+}
+
+// 同一处理器同时接受连字符与下划线两种拼写，避免前端/第三方拼写不一致
+downloadRouter.get('/public-file/:id', asyncHandler(handlePublicFileDownload));
+downloadRouter.get('/public_file/:id', asyncHandler(handlePublicFileDownload));
 
 downloadRouter.get(
   '/:type/:id',

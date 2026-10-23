@@ -4,7 +4,7 @@ import { getDb, nowIso } from '../db';
 
 export const SETTING_DEFAULTS: Record<string, unknown> = {
   'site.name': config.siteName,
-  'site.description': '面向完全隔离内网的 VS Code 安装包、插件与 Remote-SSH Server 分发平台',
+  'site.description': '面向内网的资源分发平台：软件安装包、VS Code 资源与文件共享',
   'access.require_login': false,
   'access.code_hash': '',
   'marketplace.provider': 'official',
@@ -19,6 +19,21 @@ export const SETTING_DEFAULTS: Record<string, unknown> = {
   'download.max_concurrent_per_ip': config.downloadConcurrencyPerIp,
   'upload.max_bytes': config.uploadMaxBytes,
   'upload.remote_max_bytes': 1024 * 1024 * 1024,
+  'upload.software_max_bytes': 2 * 1024 * 1024 * 1024,
+  'software.scan_interval_minutes': 10,
+  'comments.enabled': true,
+  'comments.mask_ip': false,
+  'public.enabled': true,
+  'public.max_file_bytes': 2 * 1024 * 1024 * 1024,
+  'public.retention_days': 7,
+  'public.blocked_extensions': [] as string[],
+  'public.quota_bytes': 0,
+  'share.enabled': true,
+  'share.default_hours': 72,
+  'share.max_hours': 720,
+  'limits.upload_per_10min': 10,
+  'limits.comment_per_min': 10,
+  'limits.redeem_per_15min': 20,
   'access_log.enabled': config.accessLogEnabled,
   'access_log.retention_days': config.accessLogRetentionDays,
   'security.cookie_secret': '',
@@ -93,6 +108,10 @@ export function getPublicConfig(): {
   marketplaceProvider: string;
   accessLogEnabled: boolean;
   galleryBaseUrl: string;
+  commentsEnabled: boolean;
+  commentsMaskIp: boolean;
+  publicEnabled: boolean;
+  shareEnabled: boolean;
 } {
   return {
     siteName: getSetting<string>('site.name'),
@@ -101,5 +120,9 @@ export function getPublicConfig(): {
     marketplaceProvider: getSetting<string>('marketplace.provider'),
     accessLogEnabled: getSetting<boolean>('access_log.enabled'),
     galleryBaseUrl: getSetting<string>('gallery.public_base_url') || '',
+    commentsEnabled: getSetting<boolean>('comments.enabled'),
+    commentsMaskIp: getSetting<boolean>('comments.mask_ip'),
+    publicEnabled: getSetting<boolean>('public.enabled'),
+    shareEnabled: getSetting<boolean>('share.enabled'),
   };
 }

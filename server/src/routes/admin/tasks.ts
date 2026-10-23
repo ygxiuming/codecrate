@@ -1,12 +1,15 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { getDb } from '../../db';
 import { asyncHandler, badRequest, notFound } from '../../http/errors';
-import { intParam, optionalString, parsePagination } from '../../http/validate';
+import { intParam, optionalString, parseBody, parsePagination } from '../../http/validate';
 import { audit } from '../../services/audit';
 import {
   cancelTask,
+  clearFinishedTasks,
   getTask,
   getTaskEvents,
+  queueStats,
   retryAllFailed,
   retryTask,
   type TaskRow,
@@ -26,6 +29,38 @@ function hydrate(task: TaskRow): Record<string, unknown> {
   }
   return { ...task, payload };
 }
+
+adminTasksRouter.get(
+  '/stats',
+  asyncHandler(async (_req, res) => {
+    res.json({ stats: queueStats() });
+  }),
+);
+
+adminTasksRouter.post(
+  '/clear',
+  asyncHandler(async (req, res) => {
+    const fields = parseBody(
+      z.object({
+        statuses: z
+          .array(z.enum(['success', 'failed', 'canceled']))
+          .min(1)
+          .max(3)
+          .optional(),
+      })
+        .strict()
+        .optional(),
+      req.body ?? {},
+    );
+    const statuses = fields?.statuses ?? ['success', 'canceled'];
+    const cleared = clearFinishedTasks(statuses);
+    audit(req, {
+      action: 'task.clear',
+      detail: { statuses, cleared },
+    });
+    res.json({ cleared, stats: queueStats() });
+  }),
+);
 
 adminTasksRouter.post(
   '/retry-failed',

@@ -87,3 +87,14 @@ export async function removeIfExists(absolutePath: string): Promise<boolean> {
 export function storageRelative(...segments: string[]): string {
   return segments.filter(Boolean).join('/');
 }
+
+/** 同盘 rename，跨盘回退为复制+删除（multer 临时目录可能位于不同文件系统）。 */
+export async function moveFile(from: string, to: string): Promise<void> {
+  try {
+    await fs.promises.rename(from, to);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EXDEV') throw error;
+    await fs.promises.copyFile(from, to);
+    await fs.promises.unlink(from);
+  }
+}

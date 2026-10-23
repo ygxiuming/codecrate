@@ -63,6 +63,11 @@ export function toCsv(headers: string[], rows: Array<Array<unknown>>): string {
   return `\uFEFF${lines.join('\r\n')}\r\n`;
 }
 
+/** 后端用远期哨兵值（9999-…）表示「永久有效」。 */
+export function isPermanentExpiry(value?: string | null): boolean {
+  return Boolean(value && value.startsWith('9999-'));
+}
+
 export function platformLabel(value: string): string {
   if (!value || value === 'universal') return '通用';
   return value;

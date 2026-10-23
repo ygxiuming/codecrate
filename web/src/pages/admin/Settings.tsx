@@ -59,6 +59,25 @@ export function SettingsPage() {
       uploadRemoteMb: Math.round(
         Number(settings['upload.remote_max_bytes'] ?? 0) / (1024 * 1024),
       ),
+      softwareUploadMb: Math.round(
+        Number(settings['upload.software_max_bytes'] ?? 0) / (1024 * 1024),
+      ),
+      'software.scan_interval_minutes': settings['software.scan_interval_minutes'],
+      'comments.enabled': settings['comments.enabled'],
+      'comments.mask_ip': settings['comments.mask_ip'],
+      'public.enabled': settings['public.enabled'],
+      publicMaxMb: Math.round(Number(settings['public.max_file_bytes'] ?? 0) / (1024 * 1024)),
+      'public.retention_days': settings['public.retention_days'],
+      publicBlocked: Array.isArray(settings['public.blocked_extensions'])
+        ? (settings['public.blocked_extensions'] as string[]).join(',')
+        : '',
+      publicQuotaGb: Math.round(Number(settings['public.quota_bytes'] ?? 0) / (1024 * 1024 * 1024)),
+      'share.enabled': settings['share.enabled'],
+      'share.default_hours': settings['share.default_hours'],
+      'share.max_hours': settings['share.max_hours'],
+      'limits.upload_per_10min': settings['limits.upload_per_10min'],
+      'limits.comment_per_min': settings['limits.comment_per_min'],
+      'limits.redeem_per_15min': settings['limits.redeem_per_15min'],
       'marketplace.provider': settings['marketplace.provider'],
       'marketplace.official.endpoint': settings['marketplace.official.endpoint'],
       'marketplace.openvsx.endpoint': settings['marketplace.openvsx.endpoint'],
@@ -99,6 +118,24 @@ export function SettingsPage() {
         'download.max_concurrent_per_ip': Number(values['download.max_concurrent_per_ip']),
         'upload.max_bytes': Math.round(Number(values.uploadMb) * 1024 * 1024),
         'upload.remote_max_bytes': Math.round(Number(values.uploadRemoteMb) * 1024 * 1024),
+        'upload.software_max_bytes': Math.round(Number(values.softwareUploadMb) * 1024 * 1024),
+        'software.scan_interval_minutes': Number(values['software.scan_interval_minutes']),
+        'comments.enabled': Boolean(values['comments.enabled']),
+        'comments.mask_ip': Boolean(values['comments.mask_ip']),
+        'public.enabled': Boolean(values['public.enabled']),
+        'public.max_file_bytes': Math.round(Number(values.publicMaxMb) * 1024 * 1024),
+        'public.retention_days': Number(values['public.retention_days']),
+        'public.blocked_extensions': String(values.publicBlocked ?? '')
+          .split(',')
+          .map((item) => item.trim().toLowerCase().replace(/^\./, ''))
+          .filter(Boolean),
+        'public.quota_bytes': Math.round(Number(values.publicQuotaGb) * 1024 * 1024 * 1024),
+        'share.enabled': Boolean(values['share.enabled']),
+        'share.default_hours': Number(values['share.default_hours']),
+        'share.max_hours': Number(values['share.max_hours']),
+        'limits.upload_per_10min': Number(values['limits.upload_per_10min']),
+        'limits.comment_per_min': Number(values['limits.comment_per_min']),
+        'limits.redeem_per_15min': Number(values['limits.redeem_per_15min']),
         'marketplace.provider': values['marketplace.provider'],
         'marketplace.official.endpoint': values['marketplace.official.endpoint'],
         'marketplace.openvsx.endpoint': values['marketplace.openvsx.endpoint'],
@@ -515,6 +552,193 @@ export function SettingsPage() {
                       style={{ borderRadius: 10 }}
                       message="隐私提示"
                       description="访问日志默认记录完整 IPv4/IPv6，用于内网审计与资源运营。请根据组织制度告知使用者，并设置合理的保留期。修改保留期后，每日 03:00 的维护任务会清理超期数据。"
+                    />
+                  </div>
+                ),
+              },
+              {
+                key: 'zones',
+                label: '软件包与文件区',
+                forceRender: true,
+                children: (
+                  <div>
+                    <Divider orientation="left" plain>
+                      软件安装包
+                    </Divider>
+                    <Row gutter={18}>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="softwareUploadMb"
+                          label="软件包上传上限"
+                          extra="管理员上传任意软件安装包的大小上限"
+                          rules={[{ required: true, message: '请填写上传上限' }]}
+                        >
+                          <InputNumber min={1} max={4096} addonAfter="MB" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="software.scan_interval_minutes"
+                          label="目录自动扫描间隔"
+                          extra="每 N 分钟扫描 data/files/software 目录；0 表示仅手动扫描"
+                          rules={[{ required: true, message: '请填写扫描间隔' }]}
+                        >
+                          <InputNumber min={0} max={1440} addonAfter="分钟" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Divider orientation="left" plain>
+                      公共文件区
+                    </Divider>
+                    <Row gutter={18}>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="public.enabled"
+                          label="启用公共文件区"
+                          valuePropName="checked"
+                          extra="关闭后用户无法上传与查看公共文件"
+                        >
+                          <Switch />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="publicMaxMb"
+                          label="单文件大小上限"
+                          rules={[{ required: true, message: '请填写大小上限' }]}
+                        >
+                          <InputNumber min={1} max={4096} addonAfter="MB" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="public.retention_days"
+                          label="默认保留天数"
+                          extra="到期后系统自动删除文件"
+                          rules={[{ required: true, message: '请填写保留天数' }]}
+                        >
+                          <InputNumber min={1} max={3650} addonAfter="天" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Form.Item
+                          name="publicBlocked"
+                          label="扩展名黑名单（选填）"
+                          extra="逗号分隔，例如 exe,msi,bat；留空表示不限制上传类型"
+                        >
+                          <Input placeholder="exe,msi" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Form.Item
+                          name="publicQuotaGb"
+                          label="文件区总配额"
+                          extra="公共区与私人共享合计；0 表示不限制"
+                          rules={[{ required: true, message: '请填写总配额' }]}
+                        >
+                          <InputNumber min={0} max={1024} addonAfter="GB" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Divider orientation="left" plain>
+                      私人传递（取件码）
+                    </Divider>
+                    <Row gutter={18}>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="share.enabled"
+                          label="启用私人传递"
+                          valuePropName="checked"
+                          extra="关闭后用户无法创建新的取件"
+                        >
+                          <Switch />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="share.default_hours"
+                          label="默认有效期"
+                          rules={[{ required: true, message: '请填写默认有效期' }]}
+                        >
+                          <InputNumber min={1} max={8760} addonAfter="小时" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="share.max_hours"
+                          label="最长有效期"
+                          rules={[{ required: true, message: '请填写最长有效期' }]}
+                        >
+                          <InputNumber min={1} max={8760} addonAfter="小时" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Divider orientation="left" plain>
+                      频率限制（0 = 不限）
+                    </Divider>
+                    <Row gutter={18}>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="limits.upload_per_10min"
+                          label="文件上传"
+                          extra="同一 IP 每 10 分钟可上传次数（公共区 + 私人传递）"
+                          rules={[{ required: true, message: '请填写次数' }]}
+                        >
+                          <InputNumber min={0} max={10000} addonAfter="次" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="limits.comment_per_min"
+                          label="发表评论"
+                          extra="同一 IP 每分钟可发表次数"
+                          rules={[{ required: true, message: '请填写次数' }]}
+                        >
+                          <InputNumber min={0} max={10000} addonAfter="次" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="limits.redeem_per_15min"
+                          label="取件码兑换"
+                          extra="同一 IP 每 15 分钟可兑换次数，防暴力猜测"
+                          rules={[{ required: true, message: '请填写次数' }]}
+                        >
+                          <InputNumber min={0} max={10000} addonAfter="次" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Divider orientation="left" plain>
+                      评论区
+                    </Divider>
+                    <Row gutter={18}>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="comments.enabled"
+                          label="启用评论区"
+                          valuePropName="checked"
+                          extra="包含全站留言板与软件包反馈"
+                        >
+                          <Switch />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={16}>
+                        <Form.Item
+                          name="comments.mask_ip"
+                          label="评论 IP 脱敏"
+                          valuePropName="checked"
+                          extra="开启后评论中的 IPv4 显示为 192.168.*.*；关闭则完整显示"
+                        >
+                          <Switch />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Alert
+                      type="info"
+                      showIcon
+                      style={{ borderRadius: 10 }}
+                      message="公共区风险提示"
+                      description="公共文件区默认不限上传类型，所有文件对全部用户可见。请根据内网管理要求设置黑名单、配额与保留期，过期文件由系统每 30 分钟自动清理一次。"
                     />
                   </div>
                 ),

@@ -5,6 +5,10 @@ export interface PublicConfig {
   marketplaceProvider: string;
   accessLogEnabled: boolean;
   galleryBaseUrl: string;
+  commentsEnabled: boolean;
+  commentsMaskIp: boolean;
+  publicEnabled: boolean;
+  shareEnabled: boolean;
   version: string;
 }
 
@@ -97,11 +101,205 @@ export interface Stats {
   extensionVersions: number;
   remoteVersions: number;
   remotePackages: number;
+  softwareCount?: number;
+  publicFileCount?: number;
   totalBytes: number;
   downloads: number;
   disk: { totalBytes: number; freeBytes: number; usedBytes: number };
   latestExtensions: Array<{ id: string; name: string | null; version: string; created_at: string }>;
   generatedAt: string;
+}
+
+/* ---------------- 软件包 ---------------- */
+
+export interface SoftwarePackage {
+  id: number;
+  name: string;
+  version: string;
+  platform: string;
+  category: string;
+  filename: string;
+  sizeBytes: number;
+  sha256: string;
+  downloadCount: number;
+  source: string;
+  updatedAt: string;
+}
+
+export interface SoftwareDetail extends SoftwarePackage {
+  descriptionMd: string;
+  verifiedAt: string | null;
+  createdAt: string;
+}
+
+export interface SoftwareCategory {
+  category: string;
+  count: number;
+}
+
+export interface AdminSoftwareRow {
+  id: number;
+  name: string;
+  version: string;
+  platform: string;
+  category: string;
+  filename: string;
+  size_bytes: number;
+  sha256: string;
+  download_count: number;
+  source: string;
+  verified_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminSoftwareCategory {
+  category: string;
+  count: number;
+  bytes: number;
+}
+
+export interface SoftwareScanResult {
+  scannedFiles: number;
+  added: number;
+  updated: number;
+  removed: number;
+  skipped: number;
+  errors: string[];
+  durationMs: number;
+}
+
+/* ---------------- 公共区与私人共享 ---------------- */
+
+export interface PublicFile {
+  id: number;
+  filename: string;
+  sizeBytes: number;
+  sha256: string;
+  note: string;
+  downloadCount: number;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface PublicFileLimits {
+  maxFileBytes: number;
+  blockedExtensions: string[];
+  quotaBytes: number;
+  retentionDays: number;
+}
+
+export interface PublicFileListResponse extends Paginated<PublicFile> {
+  limits: PublicFileLimits;
+}
+
+export interface ShareCreateResult {
+  id: number;
+  code: string;
+  filename: string;
+  sizeBytes: number;
+  expiresAt: string;
+  maxDownloads: number | null;
+}
+
+export interface ShareRedeemResult {
+  id: number;
+  filename: string;
+  sizeBytes: number;
+  sha256: string;
+  note: string;
+  expiresAt: string;
+  downloadUrl: string;
+  tokenExpiresAt: string;
+}
+
+export interface AdminPublicFile {
+  id: number;
+  filename: string;
+  sizeBytes: number;
+  sha256: string;
+  note: string;
+  uploaderIp: string;
+  visitorId: string;
+  downloadCount: number;
+  expiresAt: string;
+  createdAt: string;
+}
+
+export interface AdminPublicFileResponse extends Paginated<AdminPublicFile> {
+  usage: { publicBytes: number; shareBytes: number; totalBytes: number };
+}
+
+export interface AdminShare {
+  id: number;
+  filename: string;
+  sizeBytes: number;
+  sha256: string;
+  note: string;
+  maxDownloads: number | null;
+  downloadCount: number;
+  uploaderIp: string;
+  visitorId: string;
+  revoked: boolean;
+  expiresAt: string;
+  createdAt: string;
+}
+
+/* ---------------- 评论区 ---------------- */
+
+export interface CommentReply {
+  id: number;
+  nickname: string;
+  content: string;
+  ip: string;
+  ipFamily: string | null;
+  replyToId: number | null;
+  replyToNickname: string;
+  createdAt: string;
+}
+
+export interface CommentThread {
+  id: number;
+  targetType: string;
+  targetId: number;
+  nickname: string;
+  content: string;
+  ip: string;
+  ipFamily: string | null;
+  pinned: boolean;
+  createdAt: string;
+  replies: CommentReply[];
+}
+
+export interface CommentListResponse extends Paginated<CommentThread> {
+  maskIp: boolean;
+}
+
+export interface AdminCommentRow {
+  id: number;
+  targetType: string;
+  targetId: number;
+  parentId: number | null;
+  replyToId: number | null;
+  replyToNickname: string;
+  nickname: string;
+  content: string;
+  ip: string;
+  ipFamily: string | null;
+  userAgent: string;
+  pinned: boolean;
+  replyCount: number;
+  createdAt: string;
+}
+
+/* ---------------- 任务中心 ---------------- */
+
+export interface TaskStats {
+  queued: number;
+  running: number;
+  success: number;
+  failed: number;
+  canceled: number;
 }
 
 export interface Paginated<T> {
@@ -328,7 +526,7 @@ export interface TopContent {
 
 export interface StorageArtifact {
   id: number;
-  type: 'vscode' | 'extension' | 'remote-server';
+  type: 'vscode' | 'extension' | 'remote-server' | 'software';
   filename: string;
   stored_path: string;
   size_bytes: number;
@@ -337,10 +535,13 @@ export interface StorageArtifact {
   version?: string;
   platform?: string;
   channel?: string;
+  name?: string;
+  category?: string;
   extension_id?: string;
   display_name?: string | null;
   target_platform?: string;
   created_at?: string;
+  updated_at?: string;
   verified_at?: string | null;
 }
 

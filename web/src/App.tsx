@@ -2,17 +2,24 @@ import { Route, Routes } from 'react-router-dom';
 import { Result } from 'antd';
 import { AdminLayout } from './components/AdminLayout';
 import { PublicLayout } from './components/PublicLayout';
+import { BoardPage } from './pages/Board';
 import { DocsPage } from './pages/Docs';
 import { ExtensionsPage } from './pages/Extensions';
 import { HomePage } from './pages/Home';
+import { PickupPage } from './pages/Pickup';
+import { PublicZonePage } from './pages/PublicZone';
 import { RemoteSshPage } from './pages/RemoteSsh';
+import { SoftwarePage } from './pages/Software';
 import { VscodePage } from './pages/Vscode';
 import { AdminLoginPage } from './pages/admin/Login';
 import { AnnouncementsPage } from './pages/admin/Announcements';
+import { CommentsAdminPage } from './pages/admin/CommentsAdmin';
 import { DashboardPage } from './pages/admin/Dashboard';
 import { ExtensionsAdminPage } from './pages/admin/ExtensionsAdmin';
+import { FilesAdminPage } from './pages/admin/FilesAdmin';
 import { MarketplacePage } from './pages/admin/Marketplace';
 import { RemoteCachePage, VscodeCachePage } from './pages/admin/VersionCache';
+import { SoftwareAdminPage } from './pages/admin/SoftwareAdmin';
 import { TasksPage } from './pages/admin/Tasks';
 import { StoragePage } from './pages/admin/Storage';
 import { AnalyticsPage } from './pages/admin/Analytics';
@@ -27,6 +34,10 @@ export default function App() {
         <Route path="vscode" element={<VscodePage />} />
         <Route path="extensions" element={<ExtensionsPage />} />
         <Route path="remote-ssh" element={<RemoteSshPage />} />
+        <Route path="software" element={<SoftwarePage />} />
+        <Route path="zone" element={<PublicZonePage />} />
+        <Route path="pickup" element={<PickupPage />} />
+        <Route path="board" element={<BoardPage />} />
         <Route path="docs" element={<DocsPage />} />
       </Route>
 
@@ -38,6 +49,9 @@ export default function App() {
         <Route path="extensions" element={<ExtensionsAdminPage />} />
         <Route path="marketplace" element={<MarketplacePage />} />
         <Route path="remote" element={<RemoteCachePage />} />
+        <Route path="software" element={<SoftwareAdminPage />} />
+        <Route path="files" element={<FilesAdminPage />} />
+        <Route path="comments" element={<CommentsAdminPage />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="storage" element={<StoragePage />} />
         <Route path="analytics" element={<AnalyticsPage />} />

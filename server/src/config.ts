@@ -85,7 +85,14 @@ export const config = {
 };
 
 export function ensureRuntimeDirs(): void {
-  for (const dir of [config.dataDir, config.storageDir, path.join(config.storageDir, 'tmp', 'uploads')]) {
+  for (const dir of [
+    config.dataDir,
+    config.storageDir,
+    path.join(config.storageDir, 'tmp', 'uploads'),
+    path.join(config.storageDir, 'software'),
+    path.join(config.storageDir, 'public'),
+    path.join(config.storageDir, 'shares'),
+  ]) {
     fs.mkdirSync(dir, { recursive: true });
   }
 }

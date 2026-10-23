@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { Router } from 'express';
 import {
@@ -10,12 +11,32 @@ import {
 import { requireUserAccess } from '../auth/middleware';
 import { getDb } from '../db';
 import { asyncHandler, notFound } from '../http/errors';
-import { optionalString, parsePagination } from '../http/validate';
+import { intParam, optionalString, parsePagination } from '../http/validate';
 import { getPublicConfig } from '../services/settings';
+import { getSoftwareById } from '../services/softwareUpload';
 import { getStorageUsage } from '../storage/usage';
 import { compareVersions, sortVersionsDesc } from '../utils/semver';
 
 export const publicRouter = Router();
+
+// 版本号跟随 package.json（工作目录向上查找，兼容本地 dev 与容器 /app），避免与发版脱节
+const APP_VERSION = (() => {
+  let dir = process.cwd();
+  for (let depth = 0; depth < 6; depth += 1) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')) as {
+        version?: string;
+      };
+      if (pkg.version) return pkg.version;
+    } catch {
+      // 继续向上查找
+    }
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return '0.0.0';
+})();
 
 interface VSCodeRow {
   id: number;
@@ -73,7 +94,7 @@ function parseArray(value: string): string[] {
 }
 
 publicRouter.get('/config', (_req, res) => {
-  res.json({ ...getPublicConfig(), version: '1.0.0' });
+  res.json({ ...getPublicConfig(), version: APP_VERSION });
 });
 
 publicRouter.get('/platforms', (_req, res) => {
@@ -487,6 +508,15 @@ publicRouter.get(
          ORDER BY created_at DESC LIMIT 5`,
       )
       .all() as Array<{ id: string; name: string | null; version: string; created_at: string }>;
+    const now = new Date().toISOString();
+    const softwareCount = (
+      getDb().prepare('SELECT COUNT(*) AS count FROM software_packages').get() as { count: number }
+    ).count;
+    const publicFileCount = (
+      getDb()
+        .prepare('SELECT COUNT(*) AS count FROM public_files WHERE expires_at > ?')
+        .get(now) as { count: number }
+    ).count;
     res.json({
       vscodeVersions,
       vscodePackages,
@@ -494,11 +524,129 @@ publicRouter.get(
       extensionVersions,
       remoteVersions,
       remotePackages,
+      softwareCount,
+      publicFileCount,
       totalBytes: totals.bytes,
       downloads: totals.downloads,
       disk: usage.disk,
       latestExtensions: latest,
       generatedAt: new Date().toISOString(),
+    });
+  }),
+);
+
+interface SoftwarePublicRow {
+  id: number;
+  name: string;
+  version: string;
+  platform: string;
+  category: string;
+  filename: string;
+  size_bytes: number;
+  sha256: string;
+  download_count: number;
+  source: string;
+  updated_at: string;
+}
+
+publicRouter.get(
+  '/software/categories',
+  asyncHandler(async (_req, res) => {
+    const rows = getDb()
+      .prepare(
+        `SELECT category, COUNT(*) AS count FROM software_packages
+         GROUP BY category ORDER BY category`,
+      )
+      .all() as Array<{ category: string; count: number }>;
+    res.json({ items: rows });
+  }),
+);
+
+publicRouter.get(
+  '/software',
+  asyncHandler(async (req, res) => {
+    const search = (optionalString(req.query.q, 120) ?? '').toLowerCase();
+    const category = optionalString(req.query.category, 80);
+    const { page, pageSize, offset } = parsePagination(req.query as Record<string, unknown>, {
+      pageSize: 20,
+      maxPageSize: 60,
+    });
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+    if (search) {
+      conditions.push(
+        '(lower(name) LIKE ? OR lower(version) LIKE ? OR lower(platform) LIKE ? OR lower(category) LIKE ? OR lower(description_md) LIKE ?)',
+      );
+      const like = `%${search}%`;
+      params.push(like, like, like, like, like);
+    }
+    if (category) {
+      conditions.push('category = ?');
+      params.push(category);
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const db = getDb();
+    const total = (
+      db.prepare(`SELECT COUNT(*) AS count FROM software_packages ${where}`).get(...params) as {
+        count: number;
+      }
+    ).count;
+    const rows = db
+      .prepare(
+        `SELECT id, name, version, platform, category, filename, size_bytes, sha256,
+                download_count, source, updated_at
+         FROM software_packages ${where}
+         ORDER BY category ASC, name COLLATE NOCASE ASC, updated_at DESC
+         LIMIT ? OFFSET ?`,
+      )
+      .all(...params, pageSize, offset) as SoftwarePublicRow[];
+    res.json({
+      items: rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        version: row.version,
+        platform: row.platform,
+        category: row.category,
+        filename: row.filename,
+        sizeBytes: row.size_bytes,
+        sha256: row.sha256,
+        downloadCount: row.download_count,
+        source: row.source,
+        updatedAt: row.updated_at,
+      })),
+      total,
+      page,
+      pageSize,
+    });
+  }),
+);
+
+publicRouter.get(
+  '/software/:id',
+  asyncHandler(async (req, res) => {
+    const id = intParam(req.params.id, {
+      fallback: 0,
+      min: 1,
+      max: Number.MAX_SAFE_INTEGER,
+      name: 'id',
+    });
+    const row = getSoftwareById(id);
+    if (!row) throw notFound('软件包不存在');
+    res.json({
+      id: row.id,
+      name: row.name,
+      version: row.version,
+      platform: row.platform,
+      category: row.category,
+      descriptionMd: row.description_md,
+      filename: row.filename,
+      sizeBytes: row.size_bytes,
+      sha256: row.sha256,
+      downloadCount: row.download_count,
+      source: row.source,
+      verifiedAt: row.verified_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     });
   }),
 );

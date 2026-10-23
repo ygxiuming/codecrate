@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -16,7 +16,7 @@ import {
 } from 'antd';
 import { DownloadOutlined, ReloadOutlined, SearchOutlined, ShopOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { api, qs } from '../../api/client';
+import { api, ApiRequestError, qs } from '../../api/client';
 import type {
   MarketplaceDetail,
   MarketplaceSearchResponse,
@@ -29,7 +29,7 @@ interface CacheState {
   detail?: MarketplaceDetail;
   loading: boolean;
   version?: string;
-  platform: string;
+  platforms: string[];
 }
 
 export function MarketplacePage() {
@@ -71,7 +71,7 @@ export function MarketplacePage() {
   }, [load]);
 
   const openCache = async (item: MarketplaceSummary): Promise<void> => {
-    setCacheState({ item, loading: true, platform: 'auto' });
+    setCacheState({ item, loading: true, platforms: ['auto'] });
     try {
       const result = await api.get<{ detail: MarketplaceDetail }>(
         `/api/admin/marketplace/extension${qs({ provider, id: item.id })}`,
@@ -81,7 +81,7 @@ export function MarketplacePage() {
         detail: result.detail,
         loading: false,
         version: result.detail.version,
-        platform: 'auto',
+        platforms: ['auto'],
       });
     } catch (error) {
       message.error((error as Error).message);
@@ -92,33 +92,61 @@ export function MarketplacePage() {
   const versions = cacheState?.detail
     ? Array.from(new Set(cacheState.detail.versions.map((item) => item.version)))
     : [];
-  const variants =
-    cacheState?.detail?.versions.filter((item) => item.version === cacheState.version) ?? [];
-  const selectedVariant =
-    variants.find((item) => (item.targetPlatform || 'universal') === cacheState?.platform) ??
-    variants.find((item) => !item.targetPlatform);
+  const variants = useMemo(
+    () =>
+      cacheState?.detail?.versions.filter((item) => item.version === cacheState.version) ?? [],
+    [cacheState?.detail, cacheState?.version],
+  );
+  const selectedVariant = variants.find((item) => !item.targetPlatform) ?? variants[0];
+
+  const platformOptions = useMemo(() => {
+    const options = [{ value: 'auto', label: '自动（优先通用包，否则 linux-x64）' }];
+    const seen = new Set<string>();
+    for (const variant of variants) {
+      const value = variant.targetPlatform || 'universal';
+      if (seen.has(value)) continue;
+      seen.add(value);
+      options.push({ value, label: platformLabel(value) });
+    }
+    return options;
+  }, [variants]);
+
+  const targetPlatformValue = (platform: string): string | undefined =>
+    platform === 'auto' ? undefined : platform === 'universal' ? '' : platform;
 
   const confirmCache = async (): Promise<void> => {
-    if (!cacheState || !cacheState.version) return;
+    if (!cacheState || !cacheState.version || cacheState.platforms.length === 0) return;
     setSubmitting(true);
+    const created: number[] = [];
+    let skipped = 0;
+    const failures: string[] = [];
     try {
-      const targetPlatform =
-        cacheState.platform === 'auto'
-          ? undefined
-          : cacheState.platform === 'universal'
-            ? ''
-            : cacheState.platform;
-      const result = await api.post<{ taskId: number }>('/api/admin/marketplace/cache', {
-        provider,
-        id: cacheState.item.id,
-        version: cacheState.version,
-        targetPlatform,
-      });
-      message.success(`已创建缓存任务 #${result.taskId}`);
-      setCacheState(null);
-      navigate('/admin/tasks');
-    } catch (error) {
-      message.error((error as Error).message);
+      for (const platform of cacheState.platforms) {
+        try {
+          const result = await api.post<{ taskId: number }>('/api/admin/marketplace/cache', {
+            provider,
+            id: cacheState.item.id,
+            version: cacheState.version,
+            targetPlatform: targetPlatformValue(platform),
+          });
+          created.push(result.taskId);
+        } catch (error) {
+          if (error instanceof ApiRequestError && error.code === 'CONFLICT') skipped += 1;
+          else failures.push(`${platformLabel(platform)}：${(error as Error).message}`);
+        }
+      }
+      if (created.length > 0) {
+        message.success(
+          `已创建 ${created.length} 个缓存任务${skipped ? `，跳过 ${skipped} 个（已缓存或已存在）` : ''}`,
+        );
+        setCacheState(null);
+        navigate('/admin/tasks');
+      } else if (failures.length === 0) {
+        message.info(`所选平台均已缓存或已在队列中（${skipped} 个）`);
+        setCacheState(null);
+      } else {
+        message.error(failures.join('；'));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -308,7 +336,12 @@ export function MarketplacePage() {
           )
         }
         onCancel={() => setCacheState(null)}
-        okText="创建缓存任务"
+        okText={
+          cacheState && cacheState.platforms.length > 1
+            ? `创建 ${cacheState.platforms.length} 个缓存任务`
+            : '创建缓存任务'
+        }
+        okButtonProps={{ disabled: Boolean(cacheState && cacheState.platforms.length === 0) }}
         cancelText="取消"
         confirmLoading={submitting}
         onOk={() => void confirmCache()}
@@ -333,25 +366,26 @@ export function MarketplacePage() {
                 optionFilterProp="label"
                 value={cacheState.version}
                 options={versions.map((version) => ({ value: version, label: version }))}
-                onChange={(version) => setCacheState({ ...cacheState, version, platform: 'auto' })}
+                onChange={(version) =>
+                  setCacheState({ ...cacheState, version, platforms: ['auto'] })
+                }
               />
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>目标平台</div>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>目标平台（可多选）</div>
               <Select
+                mode="multiple"
                 style={{ width: '100%' }}
-                value={cacheState.platform}
-                onChange={(platform) => setCacheState({ ...cacheState, platform })}
-                options={[
-                  { value: 'auto', label: '自动（优先通用包，否则 linux-x64）' },
-                  ...variants.map((variant) => ({
-                    value: variant.targetPlatform || 'universal',
-                    label: platformLabel(variant.targetPlatform || 'universal'),
-                  })),
-                ]}
+                maxTagCount="responsive"
+                placeholder="选择要缓存的目标平台"
+                value={cacheState.platforms}
+                onChange={(platforms) => setCacheState({ ...cacheState, platforms })}
+                options={platformOptions}
               />
               <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
-                插件若包含原生二进制，需选择与目标机器匹配的平台包；纯 JS 插件使用通用包即可。
+                {variants.length > 1
+                  ? '可同时勾选多个平台，系统为每个平台创建独立缓存任务；「自动」按默认策略（优先通用包，否则 linux-x64）创建 1 个任务。'
+                  : '该版本仅提供通用包（纯 JS 插件通常如此），无需选择平台；若插件包含原生二进制，请换用提供平台专用包的版本。'}
               </div>
             </div>
             {selectedVariant ? (

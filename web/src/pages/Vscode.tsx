@@ -21,7 +21,7 @@ export function VscodePage() {
   const [keyword, setKeyword] = useState('');
   const [appliedKeyword, setAppliedKeyword] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8);
+  const [pageSize, setPageSize] = useState(10);
   const [data, setData] = useState<VscodeListResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -189,7 +189,7 @@ export function VscodePage() {
                 pageSize={data.pageSize}
                 total={data.total}
                 showSizeChanger
-                pageSizeOptions={[8, 16, 32]}
+                pageSizeOptions={[10, 20, 50]}
                 showTotal={(total) => `共 ${total} 个版本`}
                 onChange={(nextPage, nextSize) => {
                   setPage(nextPage);

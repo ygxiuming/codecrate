@@ -5,9 +5,13 @@ import {
   ArrowRightOutlined,
   BookOutlined,
   CloudServerOutlined,
+  CloudUploadOutlined,
   CodeOutlined,
+  CommentOutlined,
   DownloadOutlined,
   GithubOutlined,
+  InboxOutlined,
+  QrcodeOutlined,
   SafetyCertificateOutlined,
   SearchOutlined,
   StarFilled,
@@ -82,12 +86,12 @@ export function HomePage() {
             完全隔离内网 · 不依赖外网 CDN
           </span>
           <h1 className="hero-title">
-            内网开发环境，
+            内网资源分发，
             <br />
-            <span>从这里一键离线部署。</span>
+            <span>从这里一键搞定。</span>
           </h1>
           <p className="hero-sub">
-            集中缓存 VS Code 安装包、离线插件与 Remote-SSH Server。管理员联网采集一次，
+            软件安装包、VS Code 资源、公共文件区与取件码传递。管理员统一发布一次，
             内网用户即可随时浏览、校验并下载，无需为每台机器重复准备安装介质。
           </p>
           <div className="hero-repo">
@@ -102,7 +106,7 @@ export function HomePage() {
               size="large"
               allowClear
               prefix={<SearchOutlined style={{ color: '#7c93a9' }} />}
-              placeholder="搜索已缓存的插件，例如 Python、Docker、Chinese"
+              placeholder="搜索离线插件，例如 Python、Docker、Chinese"
               value={keyword}
               onChange={(event) => setKeyword(event.target.value)}
               onPressEnter={search}
@@ -116,19 +120,19 @@ export function HomePage() {
           <div className="hero-stats">
             <div className="hero-stat">
               <strong>{loading ? '—' : formatNumber(stats?.vscodeVersions)}</strong>
-              <span>已缓存 VS Code 版本</span>
+              <span>VS Code 版本</span>
             </div>
             <div className="hero-stat">
               <strong>{loading ? '—' : formatNumber(stats?.extensionCount)}</strong>
               <span>离线插件</span>
             </div>
             <div className="hero-stat">
-              <strong>{loading ? '—' : formatNumber(stats?.remoteVersions)}</strong>
-              <span>Remote-SSH 版本</span>
+              <strong>{loading ? '—' : formatNumber(stats?.softwareCount)}</strong>
+              <span>软件安装包</span>
             </div>
             <div className="hero-stat">
               <strong>{loading ? '—' : formatBytes(stats?.totalBytes)}</strong>
-              <span>离线资源总量</span>
+              <span>资源总量</span>
             </div>
           </div>
         </div>
@@ -138,23 +142,31 @@ export function HomePage() {
         <div className="container">
           <div className="section-heading">
             <div>
-              <h2>按需取用</h2>
-              <p>三类资源独立版本管理，下载即用，支持断点续传与 SHA256 校验。</p>
+              <h2>资源模块</h2>
+              <p>安装包、插件、server 与日常文件统一入口，全部支持 SHA256 校验与断点续传。</p>
             </div>
             <Link to="/docs" className="nav-link">
               <BookOutlined /> 查看使用说明
             </Link>
           </div>
-          <div className="feature-grid">
+          <div className="feature-grid feature-grid-auto">
+            <Link to="/software" className="feature-card">
+              <span className="feature-icon">
+                <InboxOutlined />
+              </span>
+              <h3>软件安装包</h3>
+              <p>常用软件按分类归档，附 Markdown 说明与校验值；管理员上传或目录自动扫描。</p>
+              <div className="feature-count">
+                <strong>{formatNumber(stats?.softwareCount)}</strong>
+                <span>个安装包</span>
+              </div>
+            </Link>
             <Link to="/vscode" className="feature-card">
               <span className="feature-icon">
                 <CodeOutlined />
               </span>
               <h3>VS Code 安装包</h3>
-              <p>
-                Windows、macOS、Linux 全平台缓存，包含用户/系统安装包、zip、tar.gz、deb
-                与 rpm 格式，附 SHA256 校验文件。
-              </p>
+              <p>Windows、macOS、Linux 全平台缓存，包含用户/系统安装包与 zip、tar.gz、deb、rpm 格式。</p>
               <div className="feature-count">
                 <strong>{formatNumber(stats?.vscodeVersions)}</strong>
                 <span>个版本</span>
@@ -165,10 +177,7 @@ export function HomePage() {
                 <AppstoreOutlined />
               </span>
               <h3>离线插件市场</h3>
-              <p>
-                支持管理员上传 .vsix 或从市场一键缓存，自动解析 Publisher、版本、引擎范围与依赖，
-                内网用户可直接下载安装。
-              </p>
+              <p>上传 .vsix 或从官方市场一键缓存，自动解析 Publisher、引擎范围与依赖。</p>
               <div className="feature-count">
                 <strong>{formatNumber(stats?.extensionCount)}</strong>
                 <span>个插件</span>
@@ -179,13 +188,54 @@ export function HomePage() {
                 <CloudServerOutlined />
               </span>
               <h3>Remote-SSH Server</h3>
-              <p>
-                按 VS Code 版本解析 commit，缓存对应的 vscode-server 包，解决隔离环境远程开发
-                无法下载 server 的问题。
-              </p>
+              <p>按版本解析 commit 并缓存 vscode-server，解决隔离环境无法下载 server 的问题。</p>
               <div className="feature-count">
                 <strong>{formatNumber(stats?.remoteVersions)}</strong>
                 <span>个版本</span>
+              </div>
+            </Link>
+            <Link to="/zone" className="feature-card">
+              <span className="feature-icon">
+                <CloudUploadOutlined />
+              </span>
+              <h3>公共文件区</h3>
+              <p>上传文件所有人可见，展示剩余有效期，到期由系统自动删除，限额可由管理员配置。</p>
+              <div className="feature-count">
+                <strong>{formatNumber(stats?.publicFileCount)}</strong>
+                <span>个文件</span>
+              </div>
+            </Link>
+            <Link to="/pickup" className="feature-card">
+              <span className="feature-icon">
+                <QrcodeOutlined />
+              </span>
+              <h3>取件传递</h3>
+              <p>私人文件凭取件码领取，对外不可见；可设有效期与下载次数，管理员可随时撤销。</p>
+              <div className="feature-count">
+                <strong>取件码</strong>
+                <span>免登录领取</span>
+              </div>
+            </Link>
+            <Link to="/board" className="feature-card">
+              <span className="feature-icon">
+                <CommentOutlined />
+              </span>
+              <h3>留言板</h3>
+              <p>内网公共留言与软件包反馈，支持两层回复与置顶；评论自动展示内网 IPv4。</p>
+              <div className="feature-count">
+                <strong>两层回复</strong>
+                <span>管理员置顶</span>
+              </div>
+            </Link>
+            <Link to="/docs" className="feature-card">
+              <span className="feature-icon">
+                <BookOutlined />
+              </span>
+              <h3>使用说明</h3>
+              <p>软件包发布、插件离线安装、Remote-SSH 预置与文件区/取件的完整图文手册。</p>
+              <div className="feature-count">
+                <strong>7 篇</strong>
+                <span>图文指南</span>
               </div>
             </Link>
           </div>
@@ -200,16 +250,16 @@ export function HomePage() {
                 <ThunderboltOutlined /> 30 秒上手
               </Tag>
               <h2 style={{ margin: '14px 0 8px', fontSize: 22, letterSpacing: '-0.015em' }}>
-                下载 → 拷贝 → 离线安装
+                发布 → 浏览 → 下载安装
               </h2>
               <p style={{ color: '#6b7f94', lineHeight: 1.85, margin: '0 0 16px', fontSize: 13.5 }}>
-                在联网机器上由管理员缓存资源，把文件带到内网。插件通过命令行或 VS Code
-                图形界面安装；Remote-SSH 需要预置 server 并匹配客户端 commit。
+                管理员在联网环境缓存或上传资源，内网用户直接浏览下载。临时文件走公共区或取件传递，
+                到期自动清理，不留垃圾。
               </p>
               <ol style={{ color: '#425466', lineHeight: 2, paddingLeft: 20, fontSize: 13.5, margin: 0 }}>
-                <li>在「VS Code 安装包」页面选择平台并下载安装。</li>
-                <li>在「离线插件」页面下载 .vsix，使用下方命令安装。</li>
-                <li>按「使用说明」配置 Remote-SSH，指向内网 server。</li>
+                <li>在「软件包」或「VS Code」页面选择平台并下载安装。</li>
+                <li>在「离线插件」下载 .vsix，使用右侧命令离线安装。</li>
+                <li>临时文件上传「公共区」，私人文件用「取件传递」发取件码。</li>
               </ol>
             </div>
             <div>
@@ -299,7 +349,7 @@ export function HomePage() {
               <h2>喜欢 CodeCrate？在 GitHub 给我们一颗 Star</h2>
               <p>
                 {PROJECT.description}
-                如果它帮你解决了隔离内网的 VS Code 离线部署问题，欢迎点个 Star、提交 Issue
+                如果它帮你解决了隔离内网的资源分发问题，欢迎点个 Star、提交 Issue
                 或参与贡献，这是对项目最直接的支持。
               </p>
               <div className="star-card-actions">
@@ -341,9 +391,9 @@ export function HomePage() {
           <div className="panel" style={{ background: 'linear-gradient(120deg, #0d2c49, #123f66)', border: 'none', color: '#eaf4ff' }}>
             <div className="row-between">
               <div>
-                <h2 style={{ color: '#fff', margin: 0, fontSize: 21 }}>还差一步？查看完整离线配置指南</h2>
+                <h2 style={{ color: '#fff', margin: 0, fontSize: 21 }}>还差一步？查看完整使用指南</h2>
                 <p style={{ color: 'rgba(224,238,252,0.72)', margin: '8px 0 0', fontSize: 13.5 }}>
-                  包含 VS Code 安装、插件离线安装、Remote-SSH server 预置与常见问题排查。
+                  包含软件包发布、VS Code 安装、插件离线安装、Remote-SSH 预置与文件区使用说明。
                 </p>
               </div>
               <Link to="/docs">

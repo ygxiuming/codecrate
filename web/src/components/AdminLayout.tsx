@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Avatar, Button, Layout, Menu, Spin, Tooltip } from 'antd';
-import {
+import { Avatar, Badge, Button, Layout, Menu, Spin, Tooltip } from 'antd';import {
   AppstoreOutlined,
   CloudServerOutlined,
   CodeOutlined,
+  CommentOutlined,
   DashboardOutlined,
   DatabaseOutlined,
   FileSearchOutlined,
+  FolderOpenOutlined,
   HistoryOutlined,
+  InboxOutlined,
   LineChartOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
@@ -18,6 +20,7 @@ import {
 } from '@ant-design/icons';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
+import type { TaskStats } from '../api/types';
 
 const { Sider, Header, Content } = Layout;
 
@@ -28,6 +31,9 @@ const MENU = [
   { key: '/admin/extensions', label: '插件管理', icon: <AppstoreOutlined /> },
   { key: '/admin/marketplace', label: '市场浏览', icon: <ShopOutlined /> },
   { key: '/admin/remote', label: 'Remote-SSH 缓存', icon: <CloudServerOutlined /> },
+  { key: '/admin/software', label: '软件包管理', icon: <InboxOutlined /> },
+  { key: '/admin/files', label: '文件区管理', icon: <FolderOpenOutlined /> },
+  { key: '/admin/comments', label: '评论管理', icon: <CommentOutlined /> },
   { key: '/admin/tasks', label: '任务中心', icon: <HistoryOutlined /> },
   { key: '/admin/storage', label: '存储管理', icon: <DatabaseOutlined /> },
   { key: '/admin/analytics', label: '访问分析', icon: <LineChartOutlined /> },
@@ -41,6 +47,7 @@ export function AdminLayout() {
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState('');
   const [collapsed, setCollapsed] = useState(false);
+  const [taskStats, setTaskStats] = useState<TaskStats | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -59,6 +66,24 @@ export function AdminLayout() {
       active = false;
     };
   }, [navigate, location.pathname]);
+
+  useEffect(() => {
+    let active = true;
+    const load = (): void => {
+      void api
+        .get<{ stats: TaskStats }>('/api/admin/tasks/stats')
+        .then((data) => {
+          if (active) setTaskStats(data.stats);
+        })
+        .catch(() => undefined);
+    };
+    load();
+    const timer = window.setInterval(load, 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -107,8 +132,8 @@ export function AdminLayout() {
             <CodeOutlined />
           </span>
           <span>
-            <strong>离线部署源</strong>
-            <small>管理控制台</small>
+            <strong>CodeCrate</strong>
+            <small>资源分发管理台</small>
           </span>
         </Link>
         <Menu
@@ -118,7 +143,14 @@ export function AdminLayout() {
           items={MENU.map((item) => ({
             key: item.key,
             icon: item.icon,
-            label: item.label,
+            label:
+              item.key === '/admin/tasks' && taskStats?.failed ? (
+                <Badge count={taskStats.failed} size="small" offset={[6, 0]}>
+                  {item.label}
+                </Badge>
+              ) : (
+                item.label
+              ),
           }))}
           selectedKeys={selected}
           onClick={({ key }) => {
@@ -126,7 +158,7 @@ export function AdminLayout() {
             if (window.innerWidth < 992) setCollapsed(true);
           }}
         />
-        <div className="sider-foot">v1.0.0 · 内网离线分发</div>
+        <div className="sider-foot">v1.0.0 · 内网资源分发</div>
       </Sider>
 
       <Layout>

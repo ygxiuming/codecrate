@@ -4,5 +4,5 @@ export const PROJECT = {
   issuesUrl: 'https://github.com/ygxiuming/codecrate/issues',
   license: 'MIT',
   description:
-    'CodeCrate 是开源的 VS Code 离线资源分发平台：管理员在联网环境采集安装包、插件与 Remote-SSH Server，内网用户即可浏览、校验和下载。',
+    'CodeCrate 是开源的内网资源分发平台：软件安装包、VS Code 安装包/插件/Remote-SSH、公共文件区与取件码传递，管理员统一发布，内网用户随取随用。',
 };

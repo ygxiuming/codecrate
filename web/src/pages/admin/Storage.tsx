@@ -24,7 +24,7 @@ import { DownloadButton } from '../../components/DownloadButton';
 import { Sha256 } from '../../components/Sha256';
 import { formatBytes, formatDate, formatNumber } from '../../lib/format';
 
-type ArtifactType = 'vscode' | 'extension' | 'remote-server';
+type ArtifactType = 'vscode' | 'extension' | 'remote-server' | 'software';
 
 interface Usage {
   artifacts: {
@@ -198,6 +198,7 @@ export function StoragePage() {
               { value: 'vscode', label: 'VS Code 安装包' },
               { value: 'extension', label: '插件' },
               { value: 'remote-server', label: 'Remote-SSH Server' },
+              { value: 'software', label: '软件包' },
             ]}
             onChange={(value) => {
               setType(value as ArtifactType);

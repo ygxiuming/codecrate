@@ -45,13 +45,13 @@ export function AdminLoginPage() {
               <CodeOutlined />
             </span>
             <span>
-              CodeCrate 离线部署源
-              <small style={{ color: 'rgba(200,220,240,0.6)' }}>内网离线分发平台</small>
+              CodeCrate 资源分发平台
+              <small style={{ color: 'rgba(200,220,240,0.6)' }}>内网资源分发平台</small>
             </span>
           </span>
           <h1>把外网资源，安全地带进内网。</h1>
           <p>
-            管理员在联网环境下采集 VS Code 安装包、插件与 Remote-SSH Server，
+            管理员在联网环境下采集软件安装包、VS Code 资源与文件，
             系统自动解析元数据、校验完整性并持久化存储，内网用户随取随用。
           </p>
           <div className="login-points">
