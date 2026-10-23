@@ -4,7 +4,7 @@
 
 # CodeCrate · 码箱
 
-**面向隔离内网的 VS Code 安装包、插件与 Remote-SSH Server 分发平台**
+**面向内网的资源分发平台：软件安装包 · VS Code 资源 · 公共文件区 · 取件码传递 · 评论留言**
 
 管理员在联网环境采集一次，内网用户即可浏览、校验并下载。无需外网，无需账号体系。
 
@@ -47,13 +47,13 @@
 
 ## 为什么需要 CodeCrate
 
-隔离内网的开发环境通常面临三个问题：
+隔离内网的环境通常面临三类问题：
 
-1. **VS Code 安装包**需要逐台准备，平台/架构多，版本难对齐；
-2. **插件市场不可达**，`.vsix` 依赖人工搜集，元数据与依赖关系容易遗漏；
-3. **Remote-SSH 无法下载 server**，客户端与远端 commit 不匹配时反复卡住。
+1. **常用软件安装包**需要逐台准备，平台/架构多，版本难对齐；
+2. **开发工具资源不可达**，VS Code 安装包、插件市场（`.vsix`）与 Remote-SSH server 依赖人工搜集，元数据与依赖关系容易遗漏；
+3. **日常文件传递低效**，临时文件缺少统一的分享入口，也缺少可以所有人共享的公共空间。
 
-CodeCrate 把这三类资源统一缓存到内网，提供可搜索的前台、带鉴权的后台、任务进度、完整性校验、断点续传与访问分析，并以单个 Docker 容器交付。
+CodeCrate 把这些资源统一收进内网：软件包按分类归档、VS Code 资源一键缓存、公共文件区所有人可见、私人文件凭取件码传递、留言板/评论加强交流。提供可搜索的前台、带鉴权的后台、任务进度、完整性校验、断点续传、到期自动清理与访问分析，并以单个 Docker 容器交付。
 
 > **CodeCrate = Code + Crate（代码箱）**：把外网的开发资源装进一只可以搬进内网的箱子。
 
@@ -71,6 +71,10 @@ CodeCrate 把这三类资源统一缓存到内网，提供可搜索的前台、�
 - 页头/页脚提供 GitHub 仓库、问题反馈与 Star 入口；首页包含开源项目说明与 Star 引导。
 - 右上角「管理登录」入口直达后台。
 - 可选「前台访问码」，开启后浏览与下载需输入共用访问码。
+- **软件安装包**：按分类归档浏览、搜索；详情附 Markdown 说明与 SHA256，可下载校验文件。
+- **公共文件区**：上传文件所有人可见，展示剩余有效期，到期自动删除。
+- **取件中心**：输入取件码即可下载私人分享的文件，无需登录。
+- **留言板 / 评论区**：全站留言板与软件包反馈，支持两层回复、管理员置顶；评论自动展示内网 IPv4（管理员可开启脱敏）。
 
 ### 管理员后台
 
@@ -81,13 +85,16 @@ CodeCrate 把这三类资源统一缓存到内网，提供可搜索的前台、�
 - 官方 Marketplace / Open VSX 双数据源检索（关键词、分类、下载量/更新时间排序），一键缓存；缓存弹窗列出全部历史版本，平台专用包可选择目标平台。
 - Remote-SSH Server 按版本关联 commit，多平台缓存；支持配置镜像源自动下载，也支持手动上传离线 server 包（自动读取包内 `product.json` 识别版本与 commit）。
 - Remote-SSH 原生接入：提供与官方 update 服务兼容的 `/api/vscode-update/commit:<commit>/server-<platform>/stable`，配合 `remote.SSH.useOSS` + `ossDownloadUrl` 让远端自动下载；或使用 `manual-bootstrap` 由客户端下载后自动 SCP 推送。
-- 任务中心：排队/下载中/成功/失败/已取消、进度、自动退避重试、手动重试/取消、失败原因与事件日志。
+- **软件包管理**：手动上传（名称/版本/平台/分类/Markdown 说明），或将文件放到 `data/files/software/<分类>/<软件名>/<版本>/` 由系统自动扫描（同目录 `readme.md` / `<同名>.md` 自动作为说明导入）；支持分类重命名与编辑。
+- 任务中心：排队/下载中/成功/失败/已取消统计、进度、自动退避重试、单条与批量重试/取消、清理已完成/失败任务、失败徽标提醒、失败原因与事件日志。
 - 存储管理：分类占用、磁盘余量、逐项 SHA256 校验、删除、临时文件清理；支持一键扫描缓存目录，同步手动复制或删除的文件。
 - 访问分析：PV/UV/下载/点击/搜索趋势，热门页面、资源、搜索词，事件明细与 CSV 导出。
 - 公告管理：创建、编辑、发布/下线、删除、置顶、定时生效与过期。
 - 审计日志与下载日志。
 - **VS Code gallery 兼容网关**：配合 `product.json` 的 `extensionsGallery`，让客户端扩展面板直接搜索/安装已缓存插件（详见内置「VS Code 接入」文档）。
-- 数据源、并发、上传上限、访问码、日志保留期等在线配置，并可测试数据源连通性。
+- **文件区管理**：公共区与私人取件的完整管理权（查看上传者 IP、延期、撤销、删除）；到期文件由系统自动清理并留审计。
+- **评论管理**：置顶、删除（连带回复）、批量删除、按内容/IP/来源检索。
+- 数据源、并发、上传上限、公共区限制（大小/黑名单/配额/保留期）、取件有效期、评论区开关与 IP 脱敏、访问码、日志保留期等在线配置，并可测试数据源连通性。
 
 ### 工程化
 
@@ -100,17 +107,25 @@ CodeCrate 把这三类资源统一缓存到内网，提供可搜索的前台、�
 
 ## 界面预览
 
-| 插件市场 | 管理后台 |
+| VS Code 安装包 | 插件市场 |
 | --- | --- |
-| ![插件](docs/screenshots/extensions.png) | ![后台](docs/screenshots/admin.png) |
+| ![VS Code](docs/screenshots/vscode.png) | ![插件](docs/screenshots/extensions.png) |
 
-| VS Code 安装包 | 访问分析 |
+| 软件安装包 | 软件包详情（说明 + 反馈） |
 | --- | --- |
-| ![VS Code](docs/screenshots/vscode.png) | ![分析](docs/screenshots/analytics.png) |
+| ![软件安装包](docs/screenshots/software.png) | ![软件包详情](docs/screenshots/software-detail.png) |
 
-| VS Code 缓存（commit 反查） | 公告管理 |
+| 公共文件区 | 取件中心 |
 | --- | --- |
-| ![VS Code 缓存](docs/screenshots/vscode-cache.png) | ![公告管理](docs/screenshots/announcements.png) |
+| ![公共文件区](docs/screenshots/public-zone.png) | ![取件中心](docs/screenshots/pickup.png) |
+
+| 留言板 | 访问分析 |
+| --- | --- |
+| ![留言板](docs/screenshots/board.png) | ![分析](docs/screenshots/analytics.png) |
+
+| 软件包管理（后台） | 文件区管理（后台） |
+| --- | --- |
+| ![软件包管理](docs/screenshots/admin-software.png) | ![文件区管理](docs/screenshots/admin-files.png) |
 
 ## 快速开始
 
@@ -183,7 +198,7 @@ docker compose up -d
 
 ```bash
 # 拉取指定版本
-docker pull ghcr.io/ygxiuming/codecrate:1.0.0
+docker pull ghcr.io/ygxiuming/codecrate:1.1.0
 ```
 
 > Compose 中同时保留 `build:`，未设置 `IMAGE_NAME` 时执行 `docker compose up -d --build` 仍会本地构建，适合完全离线环境。
@@ -196,7 +211,7 @@ docker pull ghcr.io/ygxiuming/codecrate:1.0.0
 | --- | --- | --- |
 | `APP_PORT` | `3000` | Compose 对外端口 |
 | `DATA_DIR_HOST` | `./data` | 宿主机数据目录，映射到容器 `/data` |
-| `IMAGE_NAME` | `codecrate:1.0.0` | Compose 使用的镜像名，可改为 GHCR 地址 |
+| `IMAGE_NAME` | `codecrate:1.1.0` | Compose 使用的镜像名，可改为 GHCR 地址 |
 | `PORT` | `3000` | 容器内监听端口 |
 | `DATA_DIR` | `/data` | 数据根目录 |
 | `STORAGE_DIR` | `$DATA_DIR/files` | 离线文件目录 |
@@ -263,16 +278,21 @@ NETWORK_ALLOWED_PRIVATE_HOSTS=update.code.visualstudio.com,*.microsoft.com,*.vis
 2. 「VS Code 缓存」：选择版本与平台，可先探测平台可用性，再批量创建任务。
 3. 「插件管理」：上传 `.vsix`，或到「市场浏览」搜索并一键缓存。
 4. 「Remote-SSH 缓存」：选择与客户端一致的版本，缓存远端架构对应的 server。
-5. 「任务中心」查看进度与失败原因；失败可重试。
-6. 「存储管理」定期校验 SHA256、清理旧版本。
-7. 「系统设置」配置数据源、访问码、并发与日志保留期。
+5. 「软件包管理」：上传安装包并填写说明，或放入 `data/files/software/` 目录由系统自动扫描。
+6. 「文件区管理」：查看公共区与私人取件的上传者 IP，按需延期、撤销或删除到期文件。
+7. 「评论管理」：置顶有价值的留言，删除违规评论（连带回复）。
+8. 「任务中心」查看进度与失败原因；失败可重试。
+9. 「存储管理」定期校验 SHA256、清理旧版本。
+10. 「系统设置」配置数据源、访问码、公共区/取件/评论策略与日志保留期。
 
 ### 普通用户
 
 1. 在「VS Code 安装包」下载对应平台，使用页面的 SHA256 校验文件核验。
 2. 在「离线插件」下载 `.vsix`，执行 `code --install-extension xxx.vsix`。
 3. 参考「使用说明 → Remote-SSH」预置 server 并配置客户端。
-4. 若管理员开启了访问码，先输入访问码。
+4. 在「软件包」按分类查找并下载常用软件，详情页附说明文档与 SHA256。
+5. 临时文件上传「公共区」，所有人可见、到期自动清理；私人文件在「公共区 → 私人传递」生成取件码发给同事，对方在「取件」页免登录领取。
+6. 使用问题或资源需求到「留言板」留言；若管理员开启了访问码，先输入访问码。
 
 完整的安装、校验、插件安装、Remote-SSH 与排错文档已内置在 `/docs`。
 
@@ -283,11 +303,11 @@ NETWORK_ALLOWED_PRIVATE_HOSTS=update.code.visualstudio.com,*.microsoft.com,*.vis
 ```bash
 # 方式 A：导出本地构建的镜像
 docker compose build
-docker save codecrate:1.0.0 | gzip > registry-image.tar.gz
+docker save codecrate:1.1.0 | gzip > registry-image.tar.gz
 
 # 方式 B：导出已发布镜像
-docker pull ghcr.io/ygxiuming/codecrate:1.0.0
-docker save ghcr.io/ygxiuming/codecrate:1.0.0 | gzip > registry-image.tar.gz
+docker pull ghcr.io/ygxiuming/codecrate:1.1.0
+docker save ghcr.io/ygxiuming/codecrate:1.1.0 | gzip > registry-image.tar.gz
 ```
 
 将 `registry-image.tar.gz`、`docker-compose.yml`、`.env.example` 带入内网：
@@ -295,7 +315,7 @@ docker save ghcr.io/ygxiuming/codecrate:1.0.0 | gzip > registry-image.tar.gz
 ```bash
 gunzip -c registry-image.tar.gz | docker load
 cp .env.example .env
-# 若导入的是 GHCR 镜像，把 IMAGE_NAME 改为 ghcr.io/ygxiuming/codecrate:1.0.0
+# 若导入的是 GHCR 镜像，把 IMAGE_NAME 改为 ghcr.io/ygxiuming/codecrate:1.1.0
 docker compose up -d
 ```
 
@@ -307,6 +327,7 @@ docker compose up -d
 - **CSRF**：写操作校验 `Origin/Referer` 同源；非浏览器客户端需带 `X-Requested-With: XMLHttpRequest`。
 - **SSRF**：仅 http/https、拒绝 URL 凭据；DNS 全量解析后拒绝环回/私网/链路本地/CGNAT/组播/保留地址（含 IPv6 与 v4-mapped）；重定向 ≤5 跳逐跳复检；`undici` 自定义 `lookup` 在连接时绑定已校验 IP，防 DNS rebinding。
 - **上传**：大小/扩展名/zip 魔数/必需条目/解压上限校验；随机临时名 + 原子移动；不解压整包；可选 ClamAV。
+- **公共区**：上传按「大小/黑名单/总配额/频率」四重限制（均可配置），文件名安全化 + 存储根约束；到期自动删除并留审计；取件码 scrypt 哈希存储、兑换限流防爆破，下载走短时 HMAC 令牌。
 - **下载**：路由只接受 DB 主键；相对路径 + 根目录约束；`nosniff`；单 IP 并发限制。
 - **响应头**：Helmet CSP、`frame-ancestors 'none'`、`Referrer-Policy: same-origin`。
 - **审计**：登录、改密、缓存、上传、删除、校验、设置变更等全部留痕。
@@ -324,7 +345,13 @@ docker compose up -d
 | `GET` | `/api/public/extensions/:id/versions` | 插件版本列表 |
 | `GET` | `/api/public/remote-servers` | Remote-SSH server 列表 |
 | `GET` | `/api/public/announcements` | 当前生效的公告 |
-| `GET` | `/api/download/:type/:id` | 下载（Range/ETag） |
+| `GET` | `/api/public/software` | 软件安装包列表（搜索/分类/分页） |
+| `GET` | `/api/public/files` | 公共区文件列表 |
+| `POST` | `/api/public/files` | 公共区上传 |
+| `POST` | `/api/public/share` | 上传并生成取件码 |
+| `POST` | `/api/share/redeem` | 取件码兑换下载链接 |
+| `GET` | `/api/public/comments` · `POST` | 评论读取/发表（留言板与资源详情） |
+| `GET` | `/api/download/:type/:id` | 下载（Range/ETag；type 含 software/public-file） |
 | `GET` | `/api/vscode-update/commit:<commit>/server-<platform>/stable` | Remote-SSH 兼容的 server 下载路径 |
 | `POST` | `/api/gallery/extensionquery` | VS Code gallery 兼容搜索 |
 | `GET` | `/api/gallery/publishers/:publisher/vsextensions/:name/:version/vspackage` | gallery 兼容下载 |
@@ -340,6 +367,11 @@ docker compose up -d
 | `POST` | `/api/admin/marketplace/cache` | 市场缓存 |
 | `POST` | `/api/admin/remote/cache` | 缓存 server |
 | `POST` | `/api/admin/remote/upload` | 手动上传 server 包 |
+| `POST` | `/api/admin/software/upload` | 上传软件安装包 |
+| `POST` | `/api/admin/software/scan` | 扫描软件包目录 |
+| `GET/PUT/DELETE` | `/api/admin/files/public·shares/:id` | 文件区管理（延期/撤销/删除） |
+| `GET` | `/api/admin/comments` · `PUT/:id/pin` | 评论管理/置顶 |
+| `GET` | `/api/admin/tasks/stats` · `POST /clear` | 任务统计/清理 |
 | `POST` | `/api/admin/storage/scan` | 扫描缓存目录并同步索引 |
 | `GET` | `/api/admin/tasks` | 任务列表 |
 | `POST` | `/api/admin/tasks/:id/retry` | 重试任务 |
@@ -379,6 +411,10 @@ npm run build       # 前端 + 后端构建
 - 官方市场与 Open VSX 缓存（含 gzip vsix 解压与 SHA256 校验）；
 - Remote-SSH commit 解析与 server 下载；
 - 存储统计、SHA256 校验、资源删除、临时文件清理；
+- 软件安装包上传/目录扫描/元数据编辑/分类重命名/删除与 Range 下载；
+- 留言板与软件包评论：两层回复拍平、置顶排序、删除连带回复、评论区开关与 IP 脱敏；
+- 公共文件区上传/下载/黑名单/总配额/到期清理，以及公共区与软件包之间的上传查重；
+- 私人取件码：自定义码兑换、令牌下载、次数上限、管理员撤销与过期清理；
 - 访问码开关与管理员绕过。
 
 ## 目录结构
@@ -393,7 +429,7 @@ npm run build       # 前端 + 后端构建
 │   │   ├── db/             # 连接与迁移
 │   │   ├── net/            # SSRF 安全的 fetch / IP 判定
 │   │   ├── routes/         # public / admin / downloads / events
-│   │   ├── services/       # 下载器、任务队列、vsix 解析、图标
+│   │   ├── services/       # 下载器、任务队列、vsix 解析、图标、软件包、文件区/取件、评论
 │   │   └── storage/        # 路径约束、完整性校验、用量
 │   └── test/               # vitest 单元与集成测试
 ├── web/                    # React + Vite + Ant Design
