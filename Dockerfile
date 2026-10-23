@@ -23,7 +23,7 @@ RUN npm --workspace server run build \
 
 FROM node:${NODE_VERSION}-bookworm-slim AS runtime
 
-ARG VERSION=1.0.0
+ARG VERSION=1.1.0
 ARG VCS_REF=unknown
 ARG BUILD_DATE=unknown
 

@@ -198,6 +198,8 @@ queued ──claim──> running ──success──> success
 - **CSRF**：写请求校验 `Origin`/`Referer` 同源；无浏览器头时要求 `X-Requested-With: XMLHttpRequest`。
 - **SSRF**：`safeFetch` 仅允许 http/https、拒绝 URL 凭据；公网仅 80/443；DNS 全量解析并拒绝私网/环回/保留地址；逐跳重定向复检；undici 自定义 `lookup` 在连接时绑定校验后的 IP。
 - **上传**：大小/扩展名/zip 魔数/必需条目/条目数/解压上限；不解压整包；随机临时文件；原子移动；可选 ClamAV。
+- **用户上传区**：公共区/私人共享统一限额（单文件大小、扩展名黑名单、双区总配额）+ `uploadLimiter` 频率限制；到期清理由 `services/expiry.ts` 每 30 分钟执行并写审计。
+- **取件码**：scrypt 哈希存储 + 确定性 HMAC（服务端密钥）用于唯一索引查找；兑换 20 次/15 分钟/IP 限流；下载链接为 15 分钟 HMAC 令牌。
 - **下载**：数据库主键路由 + 存储根目录约束 + `nosniff`；不暴露物理路径。
 - **审计**：所有管理端写操作、登录成功/失败、访问码验证、任务重试/取消等。
 - **响应头**：Helmet、CSP（`style-src 'unsafe-inline'` 供 Ant Design）、`frame-ancestors 'none'`。
@@ -210,6 +212,9 @@ queued ──claim──> running ──success──> success
 ├── vscode/<channel>/<version>/<platform>/<filename>
 ├── extensions/<publisher>/<name>/<version>[@<platform>]/<filename>.vsix
 ├── remote-server/<version>/<commit>/<platform>/<filename>
+├── software/<分类>/<软件名>/<版本|通用>/<filename>      # 任意软件安装包，同名 .md 为说明
+├── public/<timestamp>-<safe-filename>                  # 公共区文件（到期自动删除）
+├── shares/<timestamp>-<safe-filename>                  # 私人取件文件（到期自动删除）
 ├── icons/<sha256-prefix>.<png|jpg|gif|webp>
 └── tmp/uploads/<random>
 ```
@@ -217,7 +222,8 @@ queued ──claim──> running ──success──> success
 ## 9. 扩展点
 
 - **新增数据源**：实现 `MarketplaceAdapter` 或仿照 `resolveVSCodePackage`，注册到 `adapters/index.ts`；所有出网必须走 `safeFetch`。
-- **新增资源类型**：扩展 `artifacts.ts` 的类型映射、下载路由白名单、前端页面与存储统计。
+- **新增资源类型**：扩展 `artifacts.ts` 的类型映射、下载路由白名单、前端页面与存储统计（`software` 即按此路径接入）。
+- **新增用户上传区**：仿照 `services/fileZone.ts` 的「限额校验 → 落盘 → 到期清理」管线，公开路由挂 `requireUserAccess` + `uploadLimiter` + `originGuard`。
 - **替换存储后端**：抽象 `storage/` 的路径与读写，保持元数据中的 `stored_path` 为相对标识。
 - **接入 SSO**：可在反向代理层完成认证，并把用户标识写入受信任头；当前系统仍以共享访问码/单管理员为边界。
 

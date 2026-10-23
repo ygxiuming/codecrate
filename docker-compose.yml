@@ -2,12 +2,12 @@ name: codecrate
 
 services:
   registry:
-    image: ${IMAGE_NAME:-codecrate:1.0.0}
+    image: ${IMAGE_NAME:-codecrate:1.1.0}
     build:
       context: .
       dockerfile: Dockerfile
       args:
-        VERSION: ${IMAGE_TAG:-1.0.0}
+        VERSION: ${IMAGE_TAG:-1.1.0}
     container_name: ${CONTAINER_NAME:-codecrate}
     restart: unless-stopped
     ports:
