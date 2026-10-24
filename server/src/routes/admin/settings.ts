@@ -59,6 +59,7 @@ const settingsSchema = z
       .max(4 * 1024 * 1024 * 1024)
       .optional(),
     'software.scan_interval_minutes': z.number().int().min(0).max(1440).optional(),
+    'software.submissions_enabled': z.boolean().optional(),
     'comments.enabled': z.boolean().optional(),
     'comments.mask_ip': z.boolean().optional(),
     'public.enabled': z.boolean().optional(),

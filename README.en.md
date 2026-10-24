@@ -72,7 +72,8 @@ CodeCrate pulls all of these inside the network: software packages archived by c
 - GitHub repo / issues / Star links in header and footer, plus an open-source callout on the home page.
 - "Admin login" entry in the top-right corner.
 - Optional shared access code for browsing and downloads.
-- **Software packages** — archived by category with search; details carry a Markdown description and SHA256, plus a checksum file download.
+- **Software packages** — hierarchical category navigation (e.g. "Office / File management", up to 3 levels) plus tag filtering and latest/most-downloaded/name sorting; cards carry offline icons, details carry a Markdown description, SHA256 and a feedback thread, plus a checksum file download.
+- **Software submissions** — users can upload installers with metadata for review; once an admin approves, the package is merged and published automatically (can be disabled in settings).
 - **Public file zone** — anyone can upload; remaining retention time is shown and files are deleted automatically on expiry.
 - **Pickup center** — enter a pickup code to download a private transfer, no login required.
 - **Board & comments** — site-wide message board plus per-package feedback, two-level threaded replies, admin pinning; comments display the intranet IPv4 automatically (masking configurable).
@@ -86,7 +87,8 @@ CodeCrate pulls all of these inside the network: software packages archived by c
 - Official Marketplace / Open VSX dual-source search (keyword, category, downloads/updated sorting) with one-click caching; the cache dialog lists every historical version and platform-specific packages can pick a target platform.
 - Remote-SSH servers tied to versions with multi-platform caching; configure a mirror for automatic downloads or upload an offline server archive manually (version and commit are read from the bundled `product.json`).
 - Native Remote-SSH integration via the update-server-compatible `/api/vscode-update/commit:<commit>/server-<platform>/stable` endpoint (`remote.SSH.useOSS` + `ossDownloadUrl`), or `manual-bootstrap` for client-side download plus automatic SCP.
-- **Software package management** — upload manually (name/version/platform/category/Markdown description) or drop files into `data/files/software/<category>/<name>/<version>/` for automatic scanning (a sibling `readme.md` / `<same-name>.md` is imported as the description); categories can be renamed and entries edited.
+- **Software package management** — upload manually (name/version/platform/hierarchical category/tags/icon/Markdown description) or drop files into `data/files/software/<category>/<name>/<version>/` for automatic scanning (a sibling `readme.md` / `<same-name>.md` is imported as the description, `icon.png` / `<same-name>.png` as the icon); supports category renaming with cascading child updates, bulk delete / recategorize / tag edits, stat cards and sorting.
+- **Submission review** — user submissions land in a pending queue; admins can adjust the note, tags and category, then approve (auto-merge and publish, source marked "submission") or reject (file removed, record kept), with rate limiting and a global toggle.
 - Task center: queued/running/succeeded/failed/cancelled stats, progress, automatic backoff retries, single & bulk retry/cancel, cleanup of finished/failed jobs, failure badge reminders, failure reasons and event logs.
 - Storage management: per-category usage, free disk space, per-item SHA256 verification, deletion and temp-file cleanup; one-click cache-folder scan syncs manually copied or deleted files.
 - Access analytics: PV/UV/download/click/search trends, top pages/resources/searches, event details and CSV export.
@@ -279,7 +281,7 @@ Add intranet mirror hosts to the same list. The default allowlist is empty; unco
 2. "VS Code cache": pick versions and platforms, optionally probe availability, then batch-create tasks.
 3. "Extension admin": upload `.vsix` files, or search the marketplace and cache with one click.
 4. "Remote-SSH cache": pick the version matching your client and cache servers for the remote architectures.
-5. "Software admin": upload packages with a description, or drop files into `data/files/software/` for automatic scanning.
+5. "Software admin": upload packages with hierarchical categories, tags and an icon, or drop files into `data/files/software/` for automatic scanning; review user submissions — approving merges and publishes them automatically.
 6. "File zone admin": review uploader IPs in the public zone and private pickups; extend, revoke or delete as needed.
 7. "Comment admin": pin useful messages and remove abusive ones (replies included).
 8. "Task center" shows progress and failure reasons; failed jobs can be retried.
@@ -291,7 +293,7 @@ Add intranet mirror hosts to the same list. The default allowlist is empty; unco
 1. Download the matching platform from "VS Code" and verify with the SHA256 shown on the page.
 2. Download `.vsix` files from "Extensions" and install with `code --install-extension xxx.vsix`.
 3. Follow "Docs → Remote-SSH" to pre-stage servers and configure the client.
-4. Grab everyday software from "Packages" by category; details carry a description and SHA256.
+4. Grab everyday software from "Packages" by category or tag; details carry a description and SHA256. You can also submit packages for review — approved ones are published automatically.
 5. Upload temp files to the "Public zone" (visible to everyone, auto-cleaned on expiry); for private files create a pickup code under "Public zone → Private transfer" and share it — the recipient downloads from "Pickup" without logging in.
 6. Ask questions or request resources on the "Board"; if the access code is enabled, enter it first.
 
@@ -346,7 +348,9 @@ To report a security issue see [SECURITY.md](SECURITY.md) — please don't open 
 | `GET` | `/api/public/extensions/:id/versions` | Extension versions |
 | `GET` | `/api/public/remote-servers` | Remote-SSH server list |
 | `GET` | `/api/public/announcements` | Currently effective announcements |
-| `GET` | `/api/public/software` | Software package list (search/category/pagination) |
+| `GET` | `/api/public/software` | Software package list (search/hierarchical category/tag/sort/pagination) |
+| `GET` | `/api/public/software/categories` · `/tags` | Category tree stats / popular tag aggregation |
+| `POST` | `/api/public/software/submit` | User software submission (enters review queue) |
 | `GET` | `/api/public/files` | Public-zone file list |
 | `POST` | `/api/public/files` | Public-zone upload |
 | `POST` | `/api/public/share` | Upload and create a pickup code |
@@ -368,8 +372,11 @@ To report a security issue see [SECURITY.md](SECURITY.md) — please don't open 
 | `POST` | `/api/admin/marketplace/cache` | Marketplace cache |
 | `POST` | `/api/admin/remote/cache` | Cache server |
 | `POST` | `/api/admin/remote/upload` | Upload server archive manually |
-| `POST` | `/api/admin/software/upload` | Upload a software package |
+| `POST` | `/api/admin/software/upload` | Upload a software package (with tags and icon) |
 | `POST` | `/api/admin/software/scan` | Scan the software directory |
+| `POST` | `/api/admin/software/batch` | Bulk delete / recategorize / tag edits |
+| `GET/PUT` | `/api/admin/software/submissions` | Submission list / edit note and tags |
+| `POST` | `/api/admin/software/submissions/:id/approve` · `/reject` | Review a submission (approve & publish / reject) |
 | `GET/PUT/DELETE` | `/api/admin/files/public·shares/:id` | File-zone management (extend/revoke/delete) |
 | `GET` | `/api/admin/comments` · `PUT/:id/pin` | Comment management/pinning |
 | `GET` | `/api/admin/tasks/stats` · `POST /clear` | Task stats/cleanup |
@@ -412,7 +419,7 @@ Integration tests use a local mock source (`127.0.0.1` is explicitly allowlisted
 - Official marketplace and Open VSX caching (including gzip vsix parsing and SHA256 verification);
 - Remote-SSH commit resolution and server downloads;
 - Storage stats, SHA256 verification, artifact deletion and temp-file cleanup;
-- Software packages: upload/directory scan/metadata edit/category rename/delete and Range downloads;
+- Software packages: upload/directory scan/metadata edit/hierarchical category rename with cascading children/tags/bulk operations/icons/sidecar icon scanning/submission review/delete and Range downloads;
 - Board & package comments: flattened two-level replies, pinning order, delete-with-replies, comment toggle and IP masking;
 - Public file zone: upload/download/blocklist/quota/expiry cleanup and cross-resource upload dedup;
 - Pickup codes: custom codes, redemption, token downloads, download caps, revocation and expiry cleanup;

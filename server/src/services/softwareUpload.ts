@@ -10,6 +10,12 @@ import {
   safeFilename,
   storageRelative,
 } from '../storage/paths';
+import {
+  normalizeCategoryPath,
+  normalizeTagList,
+  serializeTags,
+} from './softwareMeta';
+import { saveIcon } from './icons';
 
 export interface SoftwareRow {
   id: number;
@@ -17,9 +23,11 @@ export interface SoftwareRow {
   version: string;
   platform: string;
   category: string;
+  tags: string;
   description_md: string;
   filename: string;
   stored_path: string;
+  icon_path: string | null;
   size_bytes: number;
   sha256: string;
   download_count: number;
@@ -36,7 +44,13 @@ export interface ImportSoftwareInput {
   version?: string;
   platform?: string;
   category?: string;
+  tags?: readonly string[];
   descriptionMd?: string;
+  /** 可选的本地图标（png/jpg/jpeg/webp/gif），按内容哈希存入 icons 目录。 */
+  iconData?: Buffer;
+  iconExt?: string;
+  /** 记录来源：管理员上传或用户投稿合并。 */
+  source?: 'upload' | 'submission';
 }
 
 export interface ImportSoftwareResult {
@@ -59,7 +73,8 @@ export function getSoftwareById(id: number): SoftwareRow | undefined {
 
 /**
  * 管理员上传任意软件安装包：文件名只保留安全字符，展示名与说明单独存库。
- * 存储约定 data/files/software/<分类>/<软件名>/<版本目录>/<文件>，与目录扫描一致。
+ * 存储约定 data/files/software/<分类路径>/<软件名>/<版本目录>/<文件>，与目录扫描一致；
+ * 分类支持「/」分隔的多级路径（最多 3 级）。
  */
 export async function importSoftwarePackage(
   input: ImportSoftwareInput,
@@ -74,7 +89,8 @@ export async function importSoftwarePackage(
   const name = (input.name?.trim() || displayName.replace(/\.[^.]+$/, '') || filename).slice(0, 120);
   const version = input.version?.trim().slice(0, 80) ?? '';
   const platform = input.platform?.trim().slice(0, 80) ?? '';
-  const category = input.category?.trim().slice(0, 80) || '未分类';
+  const category = normalizeCategoryPath(input.category);
+  const tags = serializeTags(normalizeTagList(input.tags ?? []));
   const descriptionMd = input.descriptionMd?.slice(0, 200_000) ?? '';
 
   const relativePath = storageRelative('software', category, name, version || '通用', filename);
@@ -110,13 +126,30 @@ export async function importSoftwarePackage(
   await removeIfExists(absolutePath);
   await moveFile(input.tempPath, absolutePath);
 
+  const iconPath = input.iconData?.length
+    ? await saveIcon(input.iconData, input.iconExt ?? 'png')
+    : null;
+
   const result = getDb()
     .prepare(
       `INSERT INTO software_packages
-        (name, version, platform, category, description_md, filename, stored_path, size_bytes, sha256, source)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'upload')`,
+        (name, version, platform, category, tags, description_md, filename, stored_path, icon_path, size_bytes, sha256, source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
-    .run(name, version, platform, category, descriptionMd, displayName, relativePath, size, sha256);
+    .run(
+      name,
+      version,
+      platform,
+      category,
+      tags,
+      descriptionMd,
+      displayName,
+      relativePath,
+      iconPath,
+      size,
+      sha256,
+      input.source ?? 'upload',
+    );
 
   return {
     id: Number(result.lastInsertRowid),

@@ -21,6 +21,7 @@ export const SETTING_DEFAULTS: Record<string, unknown> = {
   'upload.remote_max_bytes': 1024 * 1024 * 1024,
   'upload.software_max_bytes': 2 * 1024 * 1024 * 1024,
   'software.scan_interval_minutes': 10,
+  'software.submissions_enabled': true,
   'comments.enabled': true,
   'comments.mask_ip': false,
   'public.enabled': true,
@@ -33,6 +34,7 @@ export const SETTING_DEFAULTS: Record<string, unknown> = {
   'share.max_hours': 720,
   'limits.upload_per_10min': 10,
   'limits.comment_per_min': 10,
+  'limits.software_submit_per_10min': 5,
   'limits.redeem_per_15min': 20,
   'access_log.enabled': config.accessLogEnabled,
   'access_log.retention_days': config.accessLogRetentionDays,
@@ -112,6 +114,7 @@ export function getPublicConfig(): {
   commentsMaskIp: boolean;
   publicEnabled: boolean;
   shareEnabled: boolean;
+  softwareSubmissionsEnabled: boolean;
 } {
   return {
     siteName: getSetting<string>('site.name'),
@@ -124,5 +127,6 @@ export function getPublicConfig(): {
     commentsMaskIp: getSetting<boolean>('comments.mask_ip'),
     publicEnabled: getSetting<boolean>('public.enabled'),
     shareEnabled: getSetting<boolean>('share.enabled'),
+    softwareSubmissionsEnabled: getSetting<boolean>('software.submissions_enabled'),
   };
 }

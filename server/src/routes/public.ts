@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { Router } from 'express';
+import multer from 'multer';
+import { z } from 'zod';
 import {
   MARKETPLACE_CATEGORIES,
   REMOTE_SERVER_PLATFORMS,
@@ -8,13 +10,20 @@ import {
   findRemotePlatform,
   findVSCodePlatform,
 } from '../adapters/platforms';
-import { requireUserAccess } from '../auth/middleware';
+import { originGuard, requireUserAccess } from '../auth/middleware';
+import { softwareSubmitLimiter } from '../auth/rateLimit';
+import { config } from '../config';
 import { getDb } from '../db';
-import { asyncHandler, notFound } from '../http/errors';
-import { intParam, optionalString, parsePagination } from '../http/validate';
-import { getPublicConfig } from '../services/settings';
+import { ApiError, asyncHandler, badRequest, forbidden, notFound } from '../http/errors';
+import { intParam, optionalString, parseBody, parsePagination } from '../http/validate';
+import { normalizeIp } from '../analytics/visitor';
+import { getPublicConfig, getSetting } from '../services/settings';
 import { getSoftwareById } from '../services/softwareUpload';
+import { coerceTagInput, parseTagsColumn } from '../services/softwareMeta';
+import { createSubmission } from '../services/softwareSubmissions';
+import { iconPublicUrl } from '../services/icons';
 import { getStorageUsage } from '../storage/usage';
+import { removeIfExists } from '../storage/paths';
 import { compareVersions, sortVersionsDesc } from '../utils/semver';
 
 export const publicRouter = Router();
@@ -541,13 +550,27 @@ interface SoftwarePublicRow {
   version: string;
   platform: string;
   category: string;
+  tags: string;
   filename: string;
+  icon_path: string | null;
   size_bytes: number;
   sha256: string;
   download_count: number;
   source: string;
   updated_at: string;
 }
+
+/** LIKE 通配符转义（配合 ESCAPE '\' 使用）。 */
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
+const SOFTWARE_SORTS = {
+  updated: 'updated_at DESC, id DESC',
+  downloads: 'download_count DESC, id DESC',
+  size: 'size_bytes DESC, id DESC',
+  name: 'name COLLATE NOCASE ASC, id ASC',
+} as const;
 
 publicRouter.get(
   '/software/categories',
@@ -563,10 +586,27 @@ publicRouter.get(
 );
 
 publicRouter.get(
+  '/software/tags',
+  asyncHandler(async (_req, res) => {
+    const rows = getDb()
+      .prepare(
+        `SELECT jt.value AS tag, COUNT(*) AS count
+         FROM software_packages, json_each(software_packages.tags) AS jt
+         GROUP BY jt.value ORDER BY count DESC, tag ASC LIMIT 30`,
+      )
+      .all() as Array<{ tag: string; count: number }>;
+    res.json({ items: rows });
+  }),
+);
+
+publicRouter.get(
   '/software',
   asyncHandler(async (req, res) => {
     const search = (optionalString(req.query.q, 120) ?? '').toLowerCase();
     const category = optionalString(req.query.category, 80);
+    const tag = optionalString(req.query.tag, 24);
+    const sortKey = optionalString(req.query.sort, 20);
+    const sort = sortKey && sortKey in SOFTWARE_SORTS ? sortKey : 'updated';
     const { page, pageSize, offset } = parsePagination(req.query as Record<string, unknown>, {
       pageSize: 20,
       maxPageSize: 60,
@@ -575,14 +615,21 @@ publicRouter.get(
     const params: unknown[] = [];
     if (search) {
       conditions.push(
-        '(lower(name) LIKE ? OR lower(version) LIKE ? OR lower(platform) LIKE ? OR lower(category) LIKE ? OR lower(description_md) LIKE ?)',
+        '(lower(name) LIKE ? OR lower(version) LIKE ? OR lower(platform) LIKE ? OR lower(category) LIKE ? OR lower(tags) LIKE ? OR lower(description_md) LIKE ?)',
       );
       const like = `%${search}%`;
-      params.push(like, like, like, like, like);
+      params.push(like, like, like, like, like, like);
     }
     if (category) {
-      conditions.push('category = ?');
-      params.push(category);
+      // 多级分类按前缀匹配：选中「开发工具」时包含「开发工具/IDE」
+      conditions.push(`(category = ? OR category LIKE ? ESCAPE '\\')`);
+      params.push(category, `${escapeLike(category)}/%`);
+    }
+    if (tag) {
+      conditions.push(
+        'EXISTS (SELECT 1 FROM json_each(software_packages.tags) AS jt WHERE jt.value = ?)',
+      );
+      params.push(tag);
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const db = getDb();
@@ -593,10 +640,10 @@ publicRouter.get(
     ).count;
     const rows = db
       .prepare(
-        `SELECT id, name, version, platform, category, filename, size_bytes, sha256,
+        `SELECT id, name, version, platform, category, tags, filename, icon_path, size_bytes, sha256,
                 download_count, source, updated_at
          FROM software_packages ${where}
-         ORDER BY category ASC, name COLLATE NOCASE ASC, updated_at DESC
+         ORDER BY ${SOFTWARE_SORTS[sort as keyof typeof SOFTWARE_SORTS]}
          LIMIT ? OFFSET ?`,
       )
       .all(...params, pageSize, offset) as SoftwarePublicRow[];
@@ -607,7 +654,9 @@ publicRouter.get(
         version: row.version,
         platform: row.platform,
         category: row.category,
+        tags: parseTagsColumn(row.tags),
         filename: row.filename,
+        iconUrl: iconPublicUrl(row.icon_path),
         sizeBytes: row.size_bytes,
         sha256: row.sha256,
         downloadCount: row.download_count,
@@ -638,8 +687,10 @@ publicRouter.get(
       version: row.version,
       platform: row.platform,
       category: row.category,
+      tags: parseTagsColumn(row.tags),
       descriptionMd: row.description_md,
       filename: row.filename,
+      iconUrl: iconPublicUrl(row.icon_path),
       sizeBytes: row.size_bytes,
       sha256: row.sha256,
       downloadCount: row.download_count,
@@ -648,5 +699,79 @@ publicRouter.get(
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     });
+  }),
+);
+
+function submissionUploadMiddleware(
+  req: import('express').Request,
+  res: import('express').Response,
+  next: import('express').NextFunction,
+): void {
+  const configured =
+    Number(getSetting<number>('upload.software_max_bytes')) || 2 * 1024 * 1024 * 1024;
+  const maxBytes = Math.min(Math.max(configured, 1024 * 1024), 4 * 1024 * 1024 * 1024);
+  const handler = multer({
+    dest: path.join(config.storageDir, 'tmp', 'uploads'),
+    limits: { fileSize: maxBytes, files: 1, fields: 8 },
+  }).single('file');
+  handler(req, res, (error: unknown) => {
+    if (!error) {
+      next();
+      return;
+    }
+    if (error instanceof multer.MulterError) {
+      const message =
+        error.code === 'LIMIT_FILE_SIZE' ? '文件超过大小限制' : `上传失败：${error.message}`;
+      next(new ApiError(400, 'UPLOAD_ERROR', message));
+      return;
+    }
+    next(error);
+  });
+}
+
+/** 用户投稿软件包：文件暂存待审，管理员同意后自动并入正式软件包。 */
+publicRouter.post(
+  '/software/submit',
+  submissionUploadMiddleware,
+  softwareSubmitLimiter,
+  originGuard,
+  asyncHandler(async (req, res) => {
+    if (!getSetting<boolean>('software.submissions_enabled')) {
+      throw forbidden('软件投稿已关闭');
+    }
+    const file = req.file;
+    if (!file) throw badRequest('请选择要投稿的安装包文件');
+    const tempPath = file.path;
+    try {
+      const fields = parseBody(
+        z.object({
+          name: z.string().trim().max(120).optional(),
+          version: z.string().trim().max(80).optional(),
+          platform: z.string().trim().max(80).optional(),
+          category: z.string().trim().max(80).optional(),
+          tags: z.union([z.string(), z.array(z.string())]).optional(),
+          description_md: z.string().max(200_000).optional(),
+          note: z.string().trim().max(500).optional(),
+        }),
+        req.body,
+      );
+      const ip = normalizeIp(req.ip);
+      const result = await createSubmission({
+        tempPath,
+        originalName: file.originalname,
+        name: fields.name,
+        version: fields.version,
+        platform: fields.platform,
+        category: fields.category,
+        tags: coerceTagInput(fields.tags),
+        descriptionMd: fields.description_md,
+        note: fields.note,
+        uploaderIp: ip,
+        visitorId: req.visitorId ?? '',
+      });
+      res.status(201).json(result);
+    } finally {
+      await removeIfExists(tempPath);
+    }
   }),
 );

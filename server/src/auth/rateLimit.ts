@@ -68,6 +68,15 @@ export const uploadLimiter = rateLimit({
   handler: limitHandler,
 });
 
+export const softwareSubmitLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: dynamicLimit('limits.software_submit_per_10min', 5),
+  skip: dynamicSkip('limits.software_submit_per_10min'),
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  handler: limitHandler,
+});
+
 export const shareRedeemLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: dynamicLimit('limits.redeem_per_15min', 20),

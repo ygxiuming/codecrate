@@ -173,6 +173,269 @@ describe('软件安装包', () => {
   });
 });
 
+describe('软件包标签与多级分类', () => {
+  const pngBytes = Buffer.from(
+    '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789c6360000002000154a24f5f0000000049454e44ae426082',
+    'hex',
+  );
+  let idePackageId = 0;
+
+  it('上传多级分类、标签与图标的软件包', async () => {
+    const response = await adminAgent
+      .post('/api/admin/software/upload')
+      .set('X-Requested-With', XRW)
+      .field('name', 'Neon IDE')
+      .field('version', '3.4.0')
+      .field('platform', 'Windows x64')
+      .field('category', '开发工具/IDE')
+      .field('tags', JSON.stringify(['内网常用', '免安装']))
+      .field('description_md', 'Neon IDE 安装说明')
+      .attach('icon', pngBytes, 'neon.png')
+      .attach('file', Buffer.from('neon-ide-installer'), 'neon-ide-3.4.0.exe')
+      .expect(201);
+    idePackageId = response.body.id;
+    expect(response.body.category).toBe('开发工具/IDE');
+
+    const detail = await request(app).get(`/api/public/software/${idePackageId}`).expect(200);
+    expect(detail.body.tags).toEqual(['内网常用', '免安装']);
+    expect(detail.body.iconUrl).toMatch(/^\/icons\//);
+    const icon = await request(app).get(detail.body.iconUrl).expect(200);
+    expect(icon.body.length).toBe(pngBytes.length);
+  });
+
+  it('一级分类前缀过滤包含子分类，标签过滤与标签聚合', async () => {
+    const byParent = await request(app)
+      .get('/api/public/software?category=%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7')
+      .expect(200);
+    expect(byParent.body.items.some((item: any) => item.id === idePackageId)).toBe(true);
+
+    const byLeaf = await request(app)
+      .get('/api/public/software?category=%E5%BC%80%E5%8F%91%E5%B7%A5%E5%85%B7%2FIDE')
+      .expect(200);
+    expect(byLeaf.body.items.some((item: any) => item.id === idePackageId)).toBe(true);
+
+    const byTag = await request(app).get('/api/public/software?tag=%E5%86%85%E7%BD%91%E5%B8%B8%E7%94%A8').expect(200);
+    expect(byTag.body.items.some((item: any) => item.id === idePackageId)).toBe(true);
+
+    const tags = await request(app).get('/api/public/software/tags').expect(200);
+    const found = tags.body.items.find((item: any) => item.tag === '内网常用');
+    expect(found?.count).toBeGreaterThanOrEqual(1);
+  });
+
+  it('管理员搜索可命中标签并按名称排序', async () => {
+    const search = await adminAgent
+      .get('/api/admin/software?q=%E5%85%8D%E5%AE%89%E8%A3%85')
+      .set('X-Requested-With', XRW)
+      .expect(200);
+    expect(search.body.items.some((item: any) => item.id === idePackageId)).toBe(true);
+
+    const sorted = await request(app).get('/api/public/software?sort=name&pageSize=50').expect(200);
+    const names = sorted.body.items.map((item: any) => item.name);
+    const sortedCopy = [...names].sort((a: string, b: string) => a.localeCompare(b));
+    expect(names).toEqual(sortedCopy);
+  });
+
+  it('批量加标签、移除标签与批量改分类', async () => {
+    await adminAgent
+      .post('/api/admin/software/batch')
+      .set('X-Requested-With', XRW)
+      .send({ action: 'add_tags', ids: [idePackageId], tags: ['试用'] })
+      .expect(200);
+    let detail = await request(app).get(`/api/public/software/${idePackageId}`).expect(200);
+    expect(detail.body.tags).toEqual(['内网常用', '免安装', '试用']);
+
+    await adminAgent
+      .post('/api/admin/software/batch')
+      .set('X-Requested-With', XRW)
+      .send({ action: 'remove_tags', ids: [idePackageId], tags: ['试用'] })
+      .expect(200);
+    detail = await request(app).get(`/api/public/software/${idePackageId}`).expect(200);
+    expect(detail.body.tags).toEqual(['内网常用', '免安装']);
+
+    await adminAgent
+      .post('/api/admin/software/batch')
+      .set('X-Requested-With', XRW)
+      .send({ action: 'set_category', ids: [idePackageId], category: '开发工具/编辑器' })
+      .expect(200);
+    detail = await request(app).get(`/api/public/software/${idePackageId}`).expect(200);
+    expect(detail.body.category).toBe('开发工具/编辑器');
+  });
+
+  it('重命名父级分类时前缀级联更新', async () => {
+    await adminAgent
+      .post('/api/admin/software/category-rename')
+      .set('X-Requested-With', XRW)
+      .send({ from: '开发工具', to: '研发工具' })
+      .expect(200);
+    const detail = await request(app).get(`/api/public/software/${idePackageId}`).expect(200);
+    expect(detail.body.category).toBe('研发工具/编辑器');
+    await adminAgent
+      .post('/api/admin/software/category-rename')
+      .set('X-Requested-With', XRW)
+      .send({ from: '研发工具', to: '开发工具' })
+      .expect(200);
+  });
+
+  it('替换与删除图标', async () => {
+    const replaced = await adminAgent
+      .post(`/api/admin/software/${idePackageId}/icon`)
+      .set('X-Requested-With', XRW)
+      .attach('icon', pngBytes, 'neon-new.png')
+      .expect(200);
+    expect(replaced.body.iconUrl).toMatch(/^\/icons\//);
+    await adminAgent
+      .delete(`/api/admin/software/${idePackageId}/icon`)
+      .set('X-Requested-With', XRW)
+      .expect(200);
+    const detail = await request(app).get(`/api/public/software/${idePackageId}`).expect(200);
+    expect(detail.body.iconUrl).toBeNull();
+  });
+
+  it('目录扫描识别同名图片为图标且不索引为安装包', async () => {
+    const viewerDir = path.join(tmpDir, 'files', 'software', '图像工具', 'Viewer', '1.0');
+    fs.mkdirSync(viewerDir, { recursive: true });
+    fs.writeFileSync(path.join(viewerDir, 'viewer-1.0-setup.exe'), 'viewer-bytes');
+    fs.writeFileSync(path.join(viewerDir, 'viewer.png'), pngBytes);
+
+    await adminAgent
+      .post('/api/admin/software/scan')
+      .set('X-Requested-With', XRW)
+      .expect(200);
+
+    const list = await request(app).get('/api/public/software?category=图像工具').expect(200);
+    const viewer = list.body.items.find((item: any) => item.name === 'Viewer');
+    expect(viewer).toBeTruthy();
+    expect(viewer.iconUrl).toMatch(/^\/icons\//);
+    expect(list.body.items.some((item: any) => item.filename === 'viewer.png')).toBe(false);
+  });
+
+  it('清理测试产生的软件包', async () => {
+    await adminAgent
+      .delete(`/api/admin/software/${idePackageId}`)
+      .set('X-Requested-With', XRW)
+      .expect(200);
+  });
+});
+
+describe('软件投稿审核', () => {
+  let approvedPackageId = 0;
+  let rejectedSubmissionId = 0;
+
+  it('用户投稿进入待审核队列', async () => {
+    const created = await request(app)
+      .post('/api/public/software/submit')
+      .set('X-Requested-With', XRW)
+      .field('name', 'Community Tool')
+      .field('version', '0.9.1')
+      .field('category', '社区推荐')
+      .field('tags', JSON.stringify(['社区', '实验性']))
+      .field('note', '团队内部常用，请审核')
+      .attach('file', Buffer.from('community-tool-payload'), 'community-tool-0.9.1.exe')
+      .expect(201);
+    expect(created.body.id).toBeGreaterThan(0);
+
+    const pending = await adminAgent
+      .get('/api/admin/software/submissions?status=pending')
+      .set('X-Requested-With', XRW)
+      .expect(200);
+    const row = pending.body.items.find((item: any) => item.id === created.body.id);
+    expect(row).toBeTruthy();
+    expect(row.note).toBe('团队内部常用，请审核');
+    expect(row.tags).toEqual(['社区', '实验性']);
+  });
+
+  it('相同内容的重复投稿被拒绝', async () => {
+    await request(app)
+      .post('/api/public/software/submit')
+      .set('X-Requested-With', XRW)
+      .field('name', 'Community Tool Again')
+      .attach('file', Buffer.from('community-tool-payload'), 'community-tool-copy.exe')
+      .expect(409);
+  });
+
+  it('管理员审核时修改标签分类备注后同意，自动上架', async () => {
+    const pending = await adminAgent
+      .get('/api/admin/software/submissions?status=pending')
+      .set('X-Requested-With', XRW)
+      .expect(200);
+    const row = pending.body.items.find((item: any) => item.name === 'Community Tool');
+
+    const edited = await adminAgent
+      .put(`/api/admin/software/submissions/${row.id}`)
+      .set('X-Requested-With', XRW)
+      .send({ note: '团队内部常用（已核实）', tags: ['社区', '已核实'] })
+      .expect(200);
+    expect(edited.body.note).toBe('团队内部常用（已核实）');
+
+    const approved = await adminAgent
+      .post(`/api/admin/software/submissions/${row.id}/approve`)
+      .set('X-Requested-With', XRW)
+      .send({ category: '效率工具/社区软件', tags: ['社区', '已核实', '免安装'] })
+      .expect(200);
+    approvedPackageId = approved.body.packageId;
+    expect(approvedPackageId).toBeGreaterThan(0);
+
+    const detail = await request(app).get(`/api/public/software/${approvedPackageId}`).expect(200);
+    expect(detail.body.name).toBe('Community Tool');
+    expect(detail.body.source).toBe('submission');
+    expect(detail.body.category).toBe('效率工具/社区软件');
+    expect(detail.body.tags).toEqual(['社区', '已核实', '免安装']);
+    expect(detail.body.descriptionMd).toBe('');
+  });
+
+  it('拒绝投稿后不再出现在公开列表，文件被清理', async () => {
+    const created = await request(app)
+      .post('/api/public/software/submit')
+      .set('X-Requested-With', XRW)
+      .field('name', 'Bad Tool')
+      .attach('file', Buffer.from('bad-tool-payload'), 'bad-tool.exe')
+      .expect(201);
+    rejectedSubmissionId = created.body.id;
+
+    await adminAgent
+      .post(`/api/admin/software/submissions/${rejectedSubmissionId}/reject`)
+      .set('X-Requested-With', XRW)
+      .send({ comment: '来源不明，拒绝' })
+      .expect(200);
+
+    const rejected = await adminAgent
+      .get('/api/admin/software/submissions?status=rejected')
+      .set('X-Requested-With', XRW)
+      .expect(200);
+    const row = rejected.body.items.find((item: any) => item.id === rejectedSubmissionId);
+    expect(row.status).toBe('rejected');
+    expect(row.review_comment).toBe('来源不明，拒绝');
+
+    const search = await request(app).get('/api/public/software?q=Bad%20Tool').expect(200);
+    expect(search.body.items).toHaveLength(0);
+
+    await adminAgent
+      .delete(`/api/admin/software/submissions/${rejectedSubmissionId}`)
+      .set('X-Requested-With', XRW)
+      .expect(200);
+  });
+
+  it('关闭投稿开关后提交返回 403', async () => {
+    setSettingsRef({ 'software.submissions_enabled': false });
+    await request(app)
+      .post('/api/public/software/submit')
+      .set('X-Requested-With', XRW)
+      .field('name', 'Disabled Tool')
+      .attach('file', Buffer.from('disabled-tool-payload'), 'disabled-tool.exe')
+      .expect(403);
+    setSettingsRef({ 'software.submissions_enabled': true });
+    const config = await request(app).get('/api/public/config').expect(200);
+    expect(config.body.softwareSubmissionsEnabled).toBe(true);
+  });
+
+  it('清理上架的投稿软件包', async () => {
+    await adminAgent
+      .delete(`/api/admin/software/${approvedPackageId}`)
+      .set('X-Requested-With', XRW)
+      .expect(200);
+  });
+});
+
 describe('评论区', () => {
   let threadId = 0;
   let replyId = 0;

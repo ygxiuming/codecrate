@@ -90,11 +90,20 @@ export const api = {
     field = 'file',
     fields: Record<string, string | undefined> = {},
   ): Promise<T> {
+    return this.uploadFiles<T>(url, [{ field, file }], fields);
+  },
+  uploadFiles<T>(
+    url: string,
+    files: Array<{ field: string; file: File }>,
+    fields: Record<string, string | undefined> = {},
+  ): Promise<T> {
     const form = new FormData();
     for (const [key, value] of Object.entries(fields)) {
       if (value) form.append(key, value);
     }
-    form.append(field, file);
+    for (const { field, file } of files) {
+      form.append(field, file);
+    }
     return request<T>(url, { method: 'POST', body: form });
   },
 };

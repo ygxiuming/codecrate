@@ -9,6 +9,7 @@ export interface PublicConfig {
   commentsMaskIp: boolean;
   publicEnabled: boolean;
   shareEnabled: boolean;
+  softwareSubmissionsEnabled: boolean;
   version: string;
 }
 
@@ -112,13 +113,17 @@ export interface Stats {
 
 /* ---------------- 软件包 ---------------- */
 
+export type SoftwareSortKey = 'updated' | 'downloads' | 'size' | 'name';
+
 export interface SoftwarePackage {
   id: number;
   name: string;
   version: string;
   platform: string;
   category: string;
+  tags: string[];
   filename: string;
+  iconUrl: string | null;
   sizeBytes: number;
   sha256: string;
   downloadCount: number;
@@ -137,13 +142,20 @@ export interface SoftwareCategory {
   count: number;
 }
 
+export interface SoftwareTag {
+  tag: string;
+  count: number;
+}
+
 export interface AdminSoftwareRow {
   id: number;
   name: string;
   version: string;
   platform: string;
   category: string;
+  tags: string[];
   filename: string;
+  iconUrl: string | null;
   size_bytes: number;
   sha256: string;
   download_count: number;
@@ -158,6 +170,41 @@ export interface AdminSoftwareCategory {
   count: number;
   bytes: number;
 }
+
+export interface AdminSoftwareSummary {
+  total: number;
+  bytes: number;
+  downloads: number;
+  categories: number;
+  tags: number;
+  pendingSubmissions: number;
+}
+
+export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface SoftwareSubmission {
+  id: number;
+  name: string;
+  version: string;
+  platform: string;
+  category: string;
+  tags: string[];
+  description_md: string;
+  note: string;
+  filename: string;
+  size_bytes: number;
+  sha256: string;
+  status: SubmissionStatus;
+  review_comment: string;
+  reviewed_by: string;
+  reviewed_at: string | null;
+  package_id: number | null;
+  uploader_ip: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type SoftwareBatchAction = 'delete' | 'set_category' | 'add_tags' | 'remove_tags';
 
 export interface SoftwareScanResult {
   scannedFiles: number;

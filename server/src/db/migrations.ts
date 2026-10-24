@@ -277,12 +277,52 @@ CREATE INDEX IF NOT EXISTS idx_public_files_sha256 ON public_files(sha256);
 CREATE INDEX IF NOT EXISTS idx_software_sha256 ON software_packages(sha256);
 `;
 
+const MIGRATION_006 = `
+ALTER TABLE software_packages ADD COLUMN tags TEXT NOT NULL DEFAULT '[]';
+`;
+
+const MIGRATION_007 = `
+ALTER TABLE software_packages ADD COLUMN icon_path TEXT;
+`;
+
+const MIGRATION_008 = `
+CREATE TABLE IF NOT EXISTS software_submissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  version TEXT NOT NULL DEFAULT '',
+  platform TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '',
+  tags TEXT NOT NULL DEFAULT '[]',
+  description_md TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
+  filename TEXT NOT NULL,
+  stored_path TEXT NOT NULL UNIQUE,
+  size_bytes INTEGER NOT NULL DEFAULT 0,
+  sha256 TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending','approved','rejected')),
+  review_comment TEXT NOT NULL DEFAULT '',
+  reviewed_by TEXT NOT NULL DEFAULT '',
+  reviewed_at TEXT,
+  package_id INTEGER,
+  uploader_ip TEXT NOT NULL DEFAULT '',
+  visitor_id TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE INDEX IF NOT EXISTS idx_software_submissions_status
+  ON software_submissions(status, created_at);
+`;
+
 const MIGRATIONS: string[] = [
   MIGRATION_001,
   MIGRATION_002,
   MIGRATION_003,
   MIGRATION_004,
   MIGRATION_005,
+  MIGRATION_006,
+  MIGRATION_007,
+  MIGRATION_008,
 ];
 
 export const SCHEMA_VERSION = MIGRATIONS.length;

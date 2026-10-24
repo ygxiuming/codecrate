@@ -5,6 +5,7 @@ import { getDb, nowIso } from '../db';
 import { ApiError } from '../http/errors';
 import { hashFile, resolveWithin, toRelative } from '../storage/paths';
 import { logger } from '../logger';
+import { saveIcon } from './icons';
 import { getSetting } from './settings';
 
 export interface SoftwareScanResult {
@@ -83,6 +84,18 @@ function isMarkdown(name: string): boolean {
   return /\.md$/i.test(name);
 }
 
+/** 图标类图片：不作为安装包索引，而是关联到同目录的安装包。 */
+const ICON_IMAGE_PATTERN = /\.(png|jpe?g|webp|gif)$/i;
+const MAX_ICON_BYTES = 512 * 1024;
+
+function isIconImage(name: string): boolean {
+  return ICON_IMAGE_PATTERN.test(name);
+}
+
+function fileStem(relative: string): string {
+  return path.basename(relative, path.extname(relative)).toLowerCase();
+}
+
 /** 同目录 readme.md / 说明.md 对该目录下所有安装包生效；<同名>.md 只对单个安装包生效。 */
 function loadSidecars(files: FileEntry[]): Map<string, string> {
   const sidecars = new Map<string, string>();
@@ -148,24 +161,98 @@ function scanSoftwarePackages(
     .all() as Array<{ id: number; stored_path: string; size_bytes: number }>;
   const byPath = new Map(rows.map((row) => [row.stored_path, row]));
   const sidecars = loadSidecars(files);
+
+  // 两遍分类：先收集安装包文件名，再判断图片是否为图标（icon.* 或与安装包同名/前缀同名）。
+  // 与安装包无关的图片保持旧行为，仍按安装包索引。
+  const packageFiles: FileEntry[] = [];
+  const imageFiles: FileEntry[] = [];
+  for (const file of files) {
+    const filename = file.segments[file.segments.length - 1];
+    if (isMarkdown(filename)) continue;
+    if (isIconImage(filename)) imageFiles.push(file);
+    else packageFiles.push(file);
+  }
+
+  const stemsByDir = new Map<string, string[]>();
+  for (const file of packageFiles) {
+    const dir = file.segments.slice(0, -1).join('/');
+    const stems = stemsByDir.get(dir) ?? [];
+    stems.push(fileStem(file.relative));
+    stemsByDir.set(dir, stems);
+  }
+
+  const matchesInstaller = (dir: string, imageStem: string): boolean => {
+    const stems = stemsByDir.get(dir);
+    return Boolean(
+      stems?.some(
+        (stem) =>
+          stem === imageStem ||
+          (stem.startsWith(imageStem) &&
+            stem.length > imageStem.length &&
+            /[-._ +]/.test(stem[imageStem.length])),
+      ),
+    );
+  };
+
+  const dirIcons = new Map<string, string>();
+  const stemIcons = new Map<string, string>();
+  for (const image of imageFiles) {
+    const dir = image.segments.slice(0, -1).join('/');
+    const stem = fileStem(image.relative);
+    if (stem === 'icon' || stem === '图标') {
+      dirIcons.set(dir, image.relative);
+    } else if (image.size <= MAX_ICON_BYTES && matchesInstaller(dir, stem)) {
+      stemIcons.set(`${dir}/${stem}`, image.relative);
+    } else {
+      packageFiles.push(image);
+    }
+  }
+
+  /** 安装包的图标：优先同名图片，其次目录级 icon.*。 */
+  const iconFor = (file: FileEntry): string | null => {
+    const dir = file.segments.slice(0, -1).join('/');
+    const stem = fileStem(file.relative);
+    const matched = [...stemIcons.keys()].find((key) => {
+      if (!key.startsWith(`${dir}/`)) return false;
+      const imageStem = key.slice(dir.length + 1);
+      return (
+        stem === imageStem ||
+        (stem.startsWith(imageStem) &&
+          stem.length > imageStem.length &&
+          /[-._ +]/.test(stem[imageStem.length]))
+      );
+    });
+    return (matched ? stemIcons.get(matched) : null) ?? dirIcons.get(dir) ?? null;
+  };
+
   const seen = new Set<string>();
 
   const insert = db.prepare(
     `INSERT INTO software_packages
-      (name, version, platform, category, description_md, filename, stored_path, size_bytes, sha256, source, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'scan', ?)
+      (name, version, platform, category, description_md, filename, stored_path, icon_path, size_bytes, sha256, source, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'scan', ?)
      ON CONFLICT(stored_path) DO UPDATE SET
        filename = excluded.filename,
        size_bytes = excluded.size_bytes,
        sha256 = excluded.sha256,
        verified_at = NULL,
+       icon_path = COALESCE(software_packages.icon_path, excluded.icon_path),
        updated_at = excluded.updated_at`,
   );
 
+  const importIcon = async (iconRelative: string): Promise<string | null> => {
+    try {
+      const data = await fs.promises.readFile(resolveWithin(iconRelative));
+      const ext = path.extname(iconRelative).replace('.', '') || 'png';
+      return await saveIcon(data, ext);
+    } catch {
+      return null;
+    }
+  };
+
   return (async () => {
-    for (const file of files) {
+    for (const file of packageFiles) {
       const filename = file.segments[file.segments.length - 1];
-      if (isMarkdown(filename)) continue;
       const location = parseLocation(file, filename);
       if (!location) {
         recordError(`跳过 ${file.relative}：目录层级过深，应为 <分类>/<软件名>/<版本>/<文件>`);
@@ -185,6 +272,9 @@ function scanSoftwarePackages(
       try {
         const sha256 = await hashFile(file.absolute);
         const description = existing ? undefined : sidecarFor(sidecars, file);
+        const iconRelative = iconFor(file);
+        const iconPath =
+          iconRelative && iconRelative.length <= 1024 ? await importIcon(iconRelative) : null;
         const info = insert.run(
           location.name,
           location.version,
@@ -193,6 +283,7 @@ function scanSoftwarePackages(
           description ?? '',
           filename,
           file.relative,
+          iconPath,
           file.size,
           sha256,
           nowIso(),
@@ -230,6 +321,7 @@ function removeMissingSoftware(result: SoftwareScanResult): void {
  * 扫描 data/files/software 目录：
  * - 约定 <分类>/<软件名>/<版本>/<安装包文件>，兼容 1~3 层浅目录；
  * - 同目录 readme.md / 说明.md 或 <同名>.md 作为安装包说明导入；
+ * - 同目录 icon.png 或 <同名>.png/jpg/webp/gif 作为安装包图标导入（不索引为安装包）；
  * - 已存在文件大小变化时重算 SHA256；文件被删除时移除索引（说明编辑不受影响）。
  */
 export async function scanSoftware(): Promise<SoftwareScanResult> {

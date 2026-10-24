@@ -71,7 +71,8 @@ CodeCrate 把这些资源统一收进内网：软件包按分类归档、VS Code
 - 页头/页脚提供 GitHub 仓库、问题反馈与 Star 入口；首页包含开源项目说明与 Star 引导。
 - 右上角「管理登录」入口直达后台。
 - 可选「前台访问码」，开启后浏览与下载需输入共用访问码。
-- **软件安装包**：按分类归档浏览、搜索；详情附 Markdown 说明与 SHA256，可下载校验文件。
+- **软件安装包**：多级分类导航（如「办公软件/文件管理」，最多 3 级）+ 标签筛选 + 最新/最热/名称排序；卡片带离线图标，详情附 Markdown 说明、SHA256 与反馈评论区，可下载校验文件。
+- **软件投稿**：用户可上传安装包并填写信息提交审核，管理员同意后自动合并上架（可在系统设置中关闭）。
 - **公共文件区**：上传文件所有人可见，展示剩余有效期，到期自动删除。
 - **取件中心**：输入取件码即可下载私人分享的文件，无需登录。
 - **留言板 / 评论区**：全站留言板与软件包反馈，支持两层回复、管理员置顶；评论自动展示内网 IPv4（管理员可开启脱敏）。
@@ -85,7 +86,8 @@ CodeCrate 把这些资源统一收进内网：软件包按分类归档、VS Code
 - 官方 Marketplace / Open VSX 双数据源检索（关键词、分类、下载量/更新时间排序），一键缓存；缓存弹窗列出全部历史版本，平台专用包可选择目标平台。
 - Remote-SSH Server 按版本关联 commit，多平台缓存；支持配置镜像源自动下载，也支持手动上传离线 server 包（自动读取包内 `product.json` 识别版本与 commit）。
 - Remote-SSH 原生接入：提供与官方 update 服务兼容的 `/api/vscode-update/commit:<commit>/server-<platform>/stable`，配合 `remote.SSH.useOSS` + `ossDownloadUrl` 让远端自动下载；或使用 `manual-bootstrap` 由客户端下载后自动 SCP 推送。
-- **软件包管理**：手动上传（名称/版本/平台/分类/Markdown 说明），或将文件放到 `data/files/software/<分类>/<软件名>/<版本>/` 由系统自动扫描（同目录 `readme.md` / `<同名>.md` 自动作为说明导入）；支持分类重命名与编辑。
+- **软件包管理**：手动上传（名称/版本/平台/多级分类/标签/图标/Markdown 说明），或将文件放到 `data/files/software/<分类>/<软件名>/<版本>/` 由系统自动扫描（同目录 `readme.md` / `<同名>.md` 自动作为说明，`icon.png` / `<同名>.png` 自动作为图标）；支持分类重命名（父级改名级联更新子分类）、批量删除 / 批量改分类 / 批量增删标签、统计卡片与排序。
+- **投稿审核**：用户投稿进入待审队列；管理员可修改申请的备注 / 标签 / 分类后一键同意（自动合并上架，来源标记「投稿」）或拒绝（删除文件并留痕），支持限流与全局开关。
 - 任务中心：排队/下载中/成功/失败/已取消统计、进度、自动退避重试、单条与批量重试/取消、清理已完成/失败任务、失败徽标提醒、失败原因与事件日志。
 - 存储管理：分类占用、磁盘余量、逐项 SHA256 校验、删除、临时文件清理；支持一键扫描缓存目录，同步手动复制或删除的文件。
 - 访问分析：PV/UV/下载/点击/搜索趋势，热门页面、资源、搜索词，事件明细与 CSV 导出。
@@ -278,7 +280,7 @@ NETWORK_ALLOWED_PRIVATE_HOSTS=update.code.visualstudio.com,*.microsoft.com,*.vis
 2. 「VS Code 缓存」：选择版本与平台，可先探测平台可用性，再批量创建任务。
 3. 「插件管理」：上传 `.vsix`，或到「市场浏览」搜索并一键缓存。
 4. 「Remote-SSH 缓存」：选择与客户端一致的版本，缓存远端架构对应的 server。
-5. 「软件包管理」：上传安装包并填写说明，或放入 `data/files/software/` 目录由系统自动扫描。
+5. 「软件包管理」：上传安装包（可带多级分类、标签与图标）并填写说明，或放入 `data/files/software/` 目录由系统自动扫描；「审核投稿」处理用户投稿，同意后自动上架。
 6. 「文件区管理」：查看公共区与私人取件的上传者 IP，按需延期、撤销或删除到期文件。
 7. 「评论管理」：置顶有价值的留言，删除违规评论（连带回复）。
 8. 「任务中心」查看进度与失败原因；失败可重试。
@@ -290,7 +292,7 @@ NETWORK_ALLOWED_PRIVATE_HOSTS=update.code.visualstudio.com,*.microsoft.com,*.vis
 1. 在「VS Code 安装包」下载对应平台，使用页面的 SHA256 校验文件核验。
 2. 在「离线插件」下载 `.vsix`，执行 `code --install-extension xxx.vsix`。
 3. 参考「使用说明 → Remote-SSH」预置 server 并配置客户端。
-4. 在「软件包」按分类查找并下载常用软件，详情页附说明文档与 SHA256。
+4. 在「软件包」按多级分类或标签查找常用软件，详情页附说明文档与 SHA256；好用的软件也可直接投稿，审核通过后上架。
 5. 临时文件上传「公共区」，所有人可见、到期自动清理；私人文件在「公共区 → 私人传递」生成取件码发给同事，对方在「取件」页免登录领取。
 6. 使用问题或资源需求到「留言板」留言；若管理员开启了访问码，先输入访问码。
 
@@ -345,7 +347,9 @@ docker compose up -d
 | `GET` | `/api/public/extensions/:id/versions` | 插件版本列表 |
 | `GET` | `/api/public/remote-servers` | Remote-SSH server 列表 |
 | `GET` | `/api/public/announcements` | 当前生效的公告 |
-| `GET` | `/api/public/software` | 软件安装包列表（搜索/分类/分页） |
+| `GET` | `/api/public/software` | 软件安装包列表（搜索/多级分类/标签/排序/分页） |
+| `GET` | `/api/public/software/categories` · `/tags` | 分类层级统计 / 热门标签聚合 |
+| `POST` | `/api/public/software/submit` | 用户投稿软件包（进入审核队列） |
 | `GET` | `/api/public/files` | 公共区文件列表 |
 | `POST` | `/api/public/files` | 公共区上传 |
 | `POST` | `/api/public/share` | 上传并生成取件码 |
@@ -367,8 +371,11 @@ docker compose up -d
 | `POST` | `/api/admin/marketplace/cache` | 市场缓存 |
 | `POST` | `/api/admin/remote/cache` | 缓存 server |
 | `POST` | `/api/admin/remote/upload` | 手动上传 server 包 |
-| `POST` | `/api/admin/software/upload` | 上传软件安装包 |
+| `POST` | `/api/admin/software/upload` | 上传软件安装包（支持标签与图标） |
 | `POST` | `/api/admin/software/scan` | 扫描软件包目录 |
+| `POST` | `/api/admin/software/batch` | 批量删除 / 改分类 / 增删标签 |
+| `GET/PUT` | `/api/admin/software/submissions` | 投稿列表 / 修改申请备注与标签 |
+| `POST` | `/api/admin/software/submissions/:id/approve` · `/reject` | 投稿审核（同意上架 / 拒绝） |
 | `GET/PUT/DELETE` | `/api/admin/files/public·shares/:id` | 文件区管理（延期/撤销/删除） |
 | `GET` | `/api/admin/comments` · `PUT/:id/pin` | 评论管理/置顶 |
 | `GET` | `/api/admin/tasks/stats` · `POST /clear` | 任务统计/清理 |
@@ -411,7 +418,7 @@ npm run build       # 前端 + 后端构建
 - 官方市场与 Open VSX 缓存（含 gzip vsix 解压与 SHA256 校验）；
 - Remote-SSH commit 解析与 server 下载；
 - 存储统计、SHA256 校验、资源删除、临时文件清理；
-- 软件安装包上传/目录扫描/元数据编辑/分类重命名/删除与 Range 下载；
+- 软件安装包上传/目录扫描/元数据编辑/多级分类级联重命名/标签/批量操作/图标与 sidecar 图标识别/投稿审核/删除与 Range 下载；
 - 留言板与软件包评论：两层回复拍平、置顶排序、删除连带回复、评论区开关与 IP 脱敏；
 - 公共文件区上传/下载/黑名单/总配额/到期清理，以及公共区与软件包之间的上传查重；
 - 私人取件码：自定义码兑换、令牌下载、次数上限、管理员撤销与过期清理；

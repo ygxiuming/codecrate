@@ -63,6 +63,7 @@ export function SettingsPage() {
         Number(settings['upload.software_max_bytes'] ?? 0) / (1024 * 1024),
       ),
       'software.scan_interval_minutes': settings['software.scan_interval_minutes'],
+      'software.submissions_enabled': settings['software.submissions_enabled'],
       'comments.enabled': settings['comments.enabled'],
       'comments.mask_ip': settings['comments.mask_ip'],
       'public.enabled': settings['public.enabled'],
@@ -120,6 +121,7 @@ export function SettingsPage() {
         'upload.remote_max_bytes': Math.round(Number(values.uploadRemoteMb) * 1024 * 1024),
         'upload.software_max_bytes': Math.round(Number(values.softwareUploadMb) * 1024 * 1024),
         'software.scan_interval_minutes': Number(values['software.scan_interval_minutes']),
+        'software.submissions_enabled': Boolean(values['software.submissions_enabled']),
         'comments.enabled': Boolean(values['comments.enabled']),
         'comments.mask_ip': Boolean(values['comments.mask_ip']),
         'public.enabled': Boolean(values['public.enabled']),
@@ -584,6 +586,16 @@ export function SettingsPage() {
                           rules={[{ required: true, message: '请填写扫描间隔' }]}
                         >
                           <InputNumber min={0} max={1440} addonAfter="分钟" style={{ width: '100%' }} />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <Form.Item
+                          name="software.submissions_enabled"
+                          label="启用用户投稿"
+                          valuePropName="checked"
+                          extra="开启后用户可在软件包页投稿，审核通过自动上架"
+                        >
+                          <Switch />
                         </Form.Item>
                       </Col>
                     </Row>
